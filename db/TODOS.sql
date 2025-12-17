@@ -11,3 +11,9 @@ CREATE TABLE todos (
     due DATETIME,
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE TABLE Players (
+  id INT AUTO_INCREDMENT PRIMARY KEY,
+  Player_name VARCHAR(250) NOT NULL
+  Player_firstname VARCHAR(250) NOT NULL
+);

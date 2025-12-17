@@ -17,3 +17,52 @@ CREATE TABLE Players (
   Player_name VARCHAR(250) NOT NULL
   Player_firstname VARCHAR(250) NOT NULL
 );
+
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(250) NOT NULL UNIQUE,
+    password VARCHAR(250) NOT NULL
+);
+ 
+CREATE TABLE todos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    content VARCHAR(100),
+    due DATETIME,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+ 
+CREATE TABLE Players (
+  id INT AUTO_INCREDMENT PRIMARY KEY,
+  Player_name VARCHAR(250) NOT NULL
+  Player_firstname VARCHAR(250) NOT NULL
+  Playerid VARCHAR(250) NOT NULL
+);
+ 
+CREATE TABLE Coaches (
+  id INT AUTO_INCREDMENT PRIMARY KEY,
+  Coach_name VARCHAR(250) NOT NULL
+  Coach_firstname VARCHAR(250) NOT NULL
+);
+ 
+CREATE TABLE Club (
+  id INT AUTO_INCREDMENT PRIMARY KEY,
+  Club_name VARCHAR(250) NOT NULL
+);
+ 
+CREATE TABLE Titles (
+  id INT AUTO_INCREDMENT PRIMARY KEY,
+  titel_name VARCHAR(250) NOT NULL
+);
+ 
+CREATE TABLE Playersbyclub (
+  id INT AUTO_INCREDMENT PRIMARY KEY,
+  Club_name VARCHAR(250) NOT NULL
+  Playerid VARCHAR(250) NOT NULL
+);
+ 
+CREATE TABLE Titleperclub (
+  Year_ VARCHAR(250) NOT NULL
+  Title_name VARCHAR(250) NOT NULL
+  Club_name VARCHAR(250) NOT NULL
+ );

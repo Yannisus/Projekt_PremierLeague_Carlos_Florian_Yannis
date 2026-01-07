@@ -12,57 +12,42 @@ CREATE TABLE todos (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE Players (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  Player_name VARCHAR(250) NOT NULL
-  Player_firstname VARCHAR(250) NOT NULL
+CREATE TABLE players (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    player_name VARCHAR(250) NOT NULL,
+    player_firstname VARCHAR(250) NOT NULL,
+    player_identifier VARCHAR(250) NOT NULL
 );
 
-CREATE TABLE users (
+CREATE TABLE coaches (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(250) NOT NULL UNIQUE,
-    password VARCHAR(250) NOT NULL
+    coach_name VARCHAR(250) NOT NULL,
+    coach_firstname VARCHAR(250) NOT NULL
 );
- 
-CREATE TABLE todos (
+
+CREATE TABLE clubs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    content VARCHAR(100),
-    due DATETIME,
-    FOREIGN KEY (user_id) REFERENCES users(id)
+    club_name VARCHAR(250) NOT NULL
 );
- 
-CREATE TABLE Players (
-  id INT AUTO_INCREDMENT PRIMARY KEY,
-  Player_name VARCHAR(250) NOT NULL
-  Player_firstname VARCHAR(250) NOT NULL
-  Playerid VARCHAR(250) NOT NULL
+
+CREATE TABLE titles (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title_name VARCHAR(250) NOT NULL
 );
- 
-CREATE TABLE Coaches (
-  id INT AUTO_INCREDMENT PRIMARY KEY,
-  Coach_name VARCHAR(250) NOT NULL
-  Coach_firstname VARCHAR(250) NOT NULL
+
+CREATE TABLE players_by_club (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    club_id INT NOT NULL,
+    player_id INT NOT NULL,
+    FOREIGN KEY (club_id) REFERENCES clubs(id),
+    FOREIGN KEY (player_id) REFERENCES players(id)
 );
- 
-CREATE TABLE Club (
-  id INT AUTO_INCREDMENT PRIMARY KEY,
-  Club_name VARCHAR(250) NOT NULL
+
+CREATE TABLE titles_per_club (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    year_ YEAR NOT NULL,
+    title_id INT NOT NULL,
+    club_id INT NOT NULL,
+    FOREIGN KEY (title_id) REFERENCES titles(id),
+    FOREIGN KEY (club_id) REFERENCES clubs(id)
 );
- 
-CREATE TABLE Titles (
-  id INT AUTO_INCREDMENT PRIMARY KEY,
-  titel_name VARCHAR(250) NOT NULL
-);
- 
-CREATE TABLE Playersbyclub (
-  id INT AUTO_INCREDMENT PRIMARY KEY,
-  Club_name VARCHAR(250) NOT NULL
-  Playerid VARCHAR(250) NOT NULL
-);
- 
-CREATE TABLE Titleperclub (
-  Year_ VARCHAR(250) NOT NULL
-  Title_name VARCHAR(250) NOT NULL
-  Club_name VARCHAR(250) NOT NULL
- );

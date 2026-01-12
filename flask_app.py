@@ -112,27 +112,23 @@ def logout():
 
 
 # App routes
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 @login_required
 def index():
     # GET: search
-    if request.method == "GET":
-        q = request.args.get("q", "")
-        t = request.args.get("t", "club")
-        results = []
-        if q:
-            if t == "player":
-                results = db_read("SELECT players.id, players.name, players.position, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s", (f"%{q}%",))
-            elif t == "trainer":
-                results = db_read("SELECT trainers.id, trainers.name, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s", (f"%{q}%",))
-            elif t == "title":
-                results = db_read("SELECT titles.id, titles.title, titles.year, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s", (f"%{q}%",))
-            else:
-                results = db_read("SELECT id, name, country, stadium FROM clubs WHERE name LIKE %s", (f"%{q}%",))
-        return render_template("main_page.html", results=results, query=q, type=t)
-
-    # Disallow POST on index - searches are GET-only
-    return redirect(url_for("index"))
+    q = request.args.get("q", "")
+    t = request.args.get("t", "club")
+    results = []
+    if q:
+        if t == "player":
+            results = db_read("SELECT players.id, players.name, players.position, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s", (f"%{q}%",))
+        elif t == "trainer":
+            results = db_read("SELECT trainers.id, trainers.name, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s", (f"%{q}%",))
+        elif t == "title":
+            results = db_read("SELECT titles.id, titles.title, titles.year, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s", (f"%{q}%",))
+        else:
+            results = db_read("SELECT id, name, country, stadium FROM clubs WHERE name LIKE %s", (f"%{q}%",))
+    return render_template("main_page.html", results=results, query=q, type=t)
 
 
 @app.route("/users", methods=["GET"])

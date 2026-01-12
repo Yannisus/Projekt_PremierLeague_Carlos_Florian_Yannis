@@ -93,6 +93,25 @@ else:
             )
             """
         )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS trainers (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                club_id INTEGER
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS titles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                club_id INTEGER,
+                title TEXT,
+                year INTEGER
+            )
+            """
+        )
         conn.commit()
         cur.close()
         conn.close()

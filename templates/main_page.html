@@ -7,12 +7,14 @@
 
   <form method="get" action="{{ url_for('index') }}" class="form-inline">
     <div class="form-group">
-      <input name="q" value="{{ query }}" class="form-control" placeholder="Search clubs or players...">
+      <input name="q" value="{{ query }}" class="form-control" placeholder="Search clubs, players, trainers, titles...">
     </div>
     <div class="form-group">
       <select name="t" class="form-control">
-        <option value="club" {% if type != 'player' %}selected{% endif %}>Clubs</option>
+        <option value="club" {% if type == 'club' %}selected{% endif %}>Clubs</option>
         <option value="player" {% if type == 'player' %}selected{% endif %}>Players</option>
+        <option value="trainer" {% if type == 'trainer' %}selected{% endif %}>Trainers</option>
+        <option value="title" {% if type == 'title' %}selected{% endif %}>Titles</option>
       </select>
     </div>
     <button class="btn btn-primary">Search</button>

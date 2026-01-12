@@ -123,24 +123,15 @@ def index():
         if q:
             if t == "player":
                 results = db_read("SELECT players.id, players.name, players.position, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s", (f"%{q}%",))
+            elif t == "trainer":
+                results = db_read("SELECT trainers.id, trainers.name, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s", (f"%{q}%",))
+            elif t == "title":
+                results = db_read("SELECT titles.id, titles.title, titles.year, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s", (f"%{q}%",))
             else:
                 results = db_read("SELECT id, name, country, stadium FROM clubs WHERE name LIKE %s", (f"%{q}%",))
         return render_template("main_page.html", results=results, query=q, type=t)
 
-    # POST: (optionally allow adding entries via form for authenticated users)
-    action = request.form.get("action")
-    if action == "add" and current_user.is_authenticated:
-        entity = request.form.get("entity")
-        if entity == "club":
-            name = request.form.get("name")
-            country = request.form.get("country")
-            stadium = request.form.get("stadium")
-            db_write("INSERT OR IGNORE INTO clubs (name, country, stadium) VALUES (%s, %s, %s)", (name, country, stadium))
-        elif entity == "player":
-            name = request.form.get("name")
-            club_id = request.form.get("club_id") or None
-            position = request.form.get("position")
-            db_write("INSERT INTO players (name, club_id, position) VALUES (%s, %s, %s)", (name, club_id, position))
+    # Disallow POST on index - searches are GET-only
     return redirect(url_for("index"))
 
 

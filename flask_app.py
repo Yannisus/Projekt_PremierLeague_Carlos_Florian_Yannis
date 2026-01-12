@@ -115,23 +115,34 @@ def logout():
 @app.route("/", methods=["GET", "POST"])
 @login_required
 def index():
-    # GET
+    # GET: search
     if request.method == "GET":
-        todos = db_read("SELECT id, content, due FROM todos WHERE user_id=%s ORDER BY due", (current_user.id,))
-        return render_template("main_page.html", todos=todos)
+        q = request.args.get("q", "")
+        t = request.args.get("t", "club")
+        results = []
+        if q:
+            if t == "player":
+                results = db_read("SELECT players.id, players.name, players.position, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s", (f"%{q}%",))
+            else:
+                results = db_read("SELECT id, name, country, stadium FROM clubs WHERE name LIKE %s", (f"%{q}%",))
+        return render_template("main_page.html", results=results, query=q, type=t)
 
-    # POST
-    content = request.form["contents"]
-    due = request.form["due_at"]
-    db_write("INSERT INTO todos (user_id, content, due) VALUES (%s, %s, %s)", (current_user.id, content, due, ))
+    # POST: (optionally allow adding entries via form for authenticated users)
+    action = request.form.get("action")
+    if action == "add" and current_user.is_authenticated:
+        entity = request.form.get("entity")
+        if entity == "club":
+            name = request.form.get("name")
+            country = request.form.get("country")
+            stadium = request.form.get("stadium")
+            db_write("INSERT OR IGNORE INTO clubs (name, country, stadium) VALUES (%s, %s, %s)", (name, country, stadium))
+        elif entity == "player":
+            name = request.form.get("name")
+            club_id = request.form.get("club_id") or None
+            position = request.form.get("position")
+            db_write("INSERT INTO players (name, club_id, position) VALUES (%s, %s, %s)", (name, club_id, position))
     return redirect(url_for("index"))
 
-@app.post("/complete")
-@login_required
-def complete():
-    todo_id = request.form.get("id")
-    db_write("DELETE FROM todos WHERE user_id=%s AND id=%s", (current_user.id, todo_id,))
-    return redirect(url_for("index"))
 
 @app.route("/users", methods=["GET"])
 @login_required

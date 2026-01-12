@@ -121,15 +121,27 @@ def index():
     results = []
     if q:
         if t == "player":
-            results = db_read("SELECT players.id, players.name, players.position, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
+            results = db_read("SELECT players.id, players.name, players.position, players.club_id, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
         elif t == "trainer":
-            results = db_read("SELECT trainers.id, trainers.name, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
+            results = db_read("SELECT trainers.id, trainers.name, trainers.club_id, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
         elif t == "title":
-            results = db_read("SELECT titles.id, titles.title, titles.year, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
+            results = db_read("SELECT titles.id, titles.title, titles.year, titles.club_id, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
         else:
-            results = db_read("SELECT id, name, country, stadium FROM clubs WHERE name LIKE %s AND competition_id = %s", (f"%{q}%", 2021))
+            results = db_read("SELECT id, name, country, stadium, competition_name FROM clubs WHERE name LIKE %s AND competition_id = %s", (f"%{q}%", 2021))
     return render_template("main_page.html", results=results, query=q, type=t)
 
+
+@app.route('/club/<int:club_id>')
+@login_required
+def club(club_id):
+    # only show clubs in Premier League
+    club = db_read("SELECT id, name, country, stadium, competition_name FROM clubs WHERE id = %s AND competition_id = %s", (club_id, 2021), single=True)
+    if not club:
+        return redirect(url_for('index'))
+    players = db_read("SELECT id, name, position FROM players WHERE club_id = %s", (club_id,))
+    trainers = db_read("SELECT id, name FROM trainers WHERE club_id = %s", (club_id,))
+    titles = db_read("SELECT id, title, year FROM titles WHERE club_id = %s ORDER BY year DESC", (club_id,))
+    return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
 
 @app.route("/users", methods=["GET"])
 @login_required

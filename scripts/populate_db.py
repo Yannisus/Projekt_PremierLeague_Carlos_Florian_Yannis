@@ -3,7 +3,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from db import db_write
 
-# Sample clubs
+# Sample clubs with competition_id set to Premier League (2021)
 clubs = [
     ("Arsenal", "England", "Emirates Stadium"),
     ("Manchester United", "England", "Old Trafford"),
@@ -11,7 +11,7 @@ clubs = [
 ]
 
 for c in clubs:
-    db_write("INSERT OR IGNORE INTO clubs (name, country, stadium) VALUES (%s, %s, %s)", c)
+    db_write("INSERT OR IGNORE INTO clubs (name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s)", (c[0], c[1], c[2], 2021, 'Premier League'))
 
 # Sample players
 players = [

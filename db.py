@@ -79,7 +79,9 @@ else:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT UNIQUE,
                 country TEXT,
-                stadium TEXT
+                stadium TEXT,
+                competition_id INTEGER,
+                competition_name TEXT
             )
             """
         )

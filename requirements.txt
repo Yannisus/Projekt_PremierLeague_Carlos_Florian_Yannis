@@ -3,3 +3,4 @@ python-dotenv
 GitPython
 flask-login
 werkzeug
+requests

@@ -121,13 +121,13 @@ def index():
     results = []
     if q:
         if t == "player":
-            results = db_read("SELECT players.id, players.name, players.position, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s", (f"%{q}%",))
+            results = db_read("SELECT players.id, players.name, players.position, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
         elif t == "trainer":
-            results = db_read("SELECT trainers.id, trainers.name, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s", (f"%{q}%",))
+            results = db_read("SELECT trainers.id, trainers.name, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
         elif t == "title":
-            results = db_read("SELECT titles.id, titles.title, titles.year, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s", (f"%{q}%",))
+            results = db_read("SELECT titles.id, titles.title, titles.year, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
         else:
-            results = db_read("SELECT id, name, country, stadium FROM clubs WHERE name LIKE %s", (f"%{q}%",))
+            results = db_read("SELECT id, name, country, stadium FROM clubs WHERE name LIKE %s AND competition_id = %s", (f"%{q}%", 2021))
     return render_template("main_page.html", results=results, query=q, type=t)
 
 

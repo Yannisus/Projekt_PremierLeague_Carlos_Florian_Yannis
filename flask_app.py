@@ -59,6 +59,9 @@ def login():
 
         if user:
             login_user(user)
+            next_page = request.args.get('next')
+            if next_page and next_page.startswith('/'):
+                return redirect(next_page)
             return redirect(url_for("index"))
 
         error = "Benutzername oder Passwort ist falsch."
@@ -130,10 +133,10 @@ def complete():
     db_write("DELETE FROM todos WHERE user_id=%s AND id=%s", (current_user.id, todo_id,))
     return redirect(url_for("index"))
 
-@app.route("/users", methods=["GET"]) 
-@login_required 
-def users(): 
-pass 
+@app.route("/users", methods=["GET"])
+@login_required
+def users():
+    pass
 
 if __name__ == "__main__":
     app.run()

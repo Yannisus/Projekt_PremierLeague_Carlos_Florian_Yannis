@@ -23,8 +23,8 @@
 
   <hr>
 
-  {% if results is defined %}
-    <h3>Results</h3>
+  {% if query %}
+    <h3>Results for "{{ query }}"</h3>
     <ul class="list-group">
       {% if results %}
         {% for r in results %}

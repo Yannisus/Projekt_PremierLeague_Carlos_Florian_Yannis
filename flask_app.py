@@ -204,46 +204,61 @@ def index():
     return render_template("main_page.html", results=results, query=q, type=t)
 
 
+
+# === Lokales Caching für Clubdaten ===
 @app.route('/club/<int:club_id>')
 @login_required
 def club(club_id):
-    # Fetch club details from API
     try:
-        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-        resp = requests.get(url, headers=API_HEADERS, timeout=10)
-        resp.raise_for_status()
-        teams = resp.json().get("teams", [])
-        
-        club_data = None
-        for team in teams:
-            if team.get("id") == club_id:
-                club_data = team
-                break
-        
-        if not club_data:
-            return redirect(url_for('index'))
-        
-        # Extract club info
-        club = {
-            "id": club_data.get("id"),
-            "name": club_data.get("name"),
-            "country": club_data.get("area", {}).get("name"),
-            "stadium": club_data.get("venue"),
-            "competition_name": "Premier League"
-        }
-        
-        # Extract players from squad (v4 API only includes players)
-        squad = club_data.get("squad", [])
-        players = []
-        
-        for member in squad:
-            if member.get("position"):  # All squad members have a position
-                players.append({
-                    "id": member.get("id"),
-                    "name": member.get("name"),
-                    "position": member.get("position")
-                })
-        
+        # Zuerst versuchen, Clubdaten aus der lokalen DB zu lesen
+        club_row = db_read("SELECT * FROM clubs WHERE id=%s", (club_id,), single=True)
+        if club_row:
+            club = {
+                "id": club_row.get("id"),
+                "name": club_row.get("name") or club_row.get("club_name"),
+                "country": club_row.get("country"),
+                "stadium": club_row.get("stadium"),
+                "competition_name": club_row.get("competition_name"),
+                "trainer": club_row.get("trainer"),
+                "title": club_row.get("title")
+            }
+            # Spieler aus players_by_club holen
+            players = db_read("""
+                SELECT p.id, p.player_name as name, NULL as position
+                FROM players_by_club pb
+                JOIN players p ON pb.player_id = p.id
+                WHERE pb.club_id = %s
+            """, (club_id,))
+        else:
+            # Wenn nicht vorhanden, von der API holen und in DB speichern
+            url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+            resp = requests.get(url, headers=API_HEADERS, timeout=10)
+            resp.raise_for_status()
+            teams = resp.json().get("teams", [])
+            club_data = next((team for team in teams if team.get("id") == club_id), None)
+            if not club_data:
+                return redirect(url_for('index'))
+            # In DB speichern
+            db_write("INSERT INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
+                (club_data.get("id"), club_data.get("name"), club_data.get("area", {}).get("name"), club_data.get("venue"), COMPETITION_ID, "Premier League"))
+            club = {
+                "id": club_data.get("id"),
+                "name": club_data.get("name"),
+                "country": club_data.get("area", {}).get("name"),
+                "stadium": club_data.get("venue"),
+                "competition_name": "Premier League",
+                "trainer": None,
+                "title": None
+            }
+            players = []
+            squad = club_data.get("squad", [])
+            for member in squad:
+                if member.get("position"):
+                    players.append({
+                        "id": member.get("id"),
+                        "name": member.get("name"),
+                        "position": member.get("position")
+                    })
         # Trainer und Titel aus DB holen
         trainers = db_read("""
             SELECT c.coach_firstname, c.coach_name, cp.start_year, cp.end_year
@@ -258,7 +273,6 @@ def club(club_id):
             WHERE tp.club_id = %s
         """, (club_id,))
         return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
-    
     except Exception as e:
         logging.error(f"Error fetching club {club_id}: {str(e)}", exc_info=True)
         return redirect(url_for('index'))
@@ -285,11 +299,16 @@ def add_trainer():
         else:
             # Versuche Clubdaten von der API zu holen und einzufügen
             try:
-                from scripts.fetch_api import fetch_teams, upsert_club
-                teams = fetch_teams()
+                import requests
+                url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+                resp = requests.get(url, headers=API_HEADERS, timeout=10)
+                resp.raise_for_status()
+                teams = resp.json().get("teams", [])
                 team = next((t for t in teams if t.get("name", "").lower() == club_name.lower()), None)
                 if team:
-                    club_id = upsert_club(team)
+                    db_write("INSERT INTO clubs (name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s)",
+                        (team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
+                    club_id = db_read("SELECT id FROM clubs WHERE name=%s ORDER BY id DESC LIMIT 1", (team.get("name"),))[0][0]
                 else:
                     # Fallback: nur Name eintragen
                     db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
@@ -298,6 +317,8 @@ def add_trainer():
                 print("Fehler beim API-Club-Insert:", e)
                 db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
                 club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+        # Trainer und Titel direkt in clubs Tabelle speichern
+        db_write("UPDATE clubs SET trainer=%s WHERE id=%s", (coach_name, club_id))
         # Trainer anlegen
         db_write("INSERT INTO coaches (coach_name, coach_firstname) VALUES (%s, %s)", (coach_name, coach_firstname))
         coach_id = db_read("SELECT id FROM coaches WHERE coach_name=%s AND coach_firstname=%s ORDER BY id DESC LIMIT 1", (coach_name, coach_firstname))[0][0]
@@ -337,6 +358,8 @@ def add_title():
         db_write("INSERT INTO titles (title_name) VALUES (%s)", (title_name,))
         title_id = db_read("SELECT id FROM titles WHERE title_name=%s ORDER BY id DESC LIMIT 1", (title_name,))[0][0]
         db_write("INSERT INTO titles_per_club (year_, title_id, club_id) VALUES (%s, %s, %s)", (year_, title_id, club_id))
+        # Titel auch direkt in clubs Tabelle speichern
+        db_write("UPDATE clubs SET title=%s WHERE id=%s", (title_name, club_id))
         flash("Titel erfolgreich hinzugefügt.")
         return redirect(url_for("add_title"))
     return render_template("add_title.html")

@@ -37,6 +37,9 @@ CREATE TABLE clubs (
     competition_name VARCHAR(100)
 );
 
+ALTER TABLE clubs ADD COLUMN trainer VARCHAR(250);
+ALTER TABLE clubs ADD COLUMN title VARCHAR(250);
+
 CREATE TABLE titles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title_name VARCHAR(250) NOT NULL

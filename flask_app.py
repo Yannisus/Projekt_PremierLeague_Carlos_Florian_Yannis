@@ -307,9 +307,11 @@ def add_trainer():
                 teams = resp.json().get("teams", [])
                 team = next((t for t in teams if t.get("name", "").lower() == club_name.lower()), None)
                 if team:
-                    db_write("INSERT INTO clubs (name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s)",
-                        (team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
-                    club_id = db_read("SELECT id FROM clubs WHERE name=%s ORDER BY id DESC LIMIT 1", (team.get("name"),))[0][0]
+                    team_id = team.get("id")
+                    # Ensure we store the API club id so coaches_per_club references match the API-based club pages
+                    db_write("INSERT OR IGNORE INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
+                        (team_id, team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
+                    club_id = team_id
                 else:
                     # Fallback: nur Name eintragen
                     db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))

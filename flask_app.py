@@ -18,10 +18,13 @@ logging.basicConfig(
 # Load .env variables
 load_dotenv()
 W_SECRET = os.getenv("W_SECRET")
-API_KEY = os.getenv("FOOTBALL_API_KEY")
-API_BASE = os.getenv("FOOTBALL_API_BASE", "https://api.football-data.org/v2")
+API_KEY = os.getenv("FOOTBALL_API_KEY", "c8d4f0a982ae42269ea20d8f123a048e")
+API_BASE = os.getenv("FOOTBALL_API_BASE", "https://api.football-data.org/v4")
 API_HEADERS = {"X-Auth-Token": API_KEY} if API_KEY else {}
-COMPETITION_ID = 2021
+COMPETITION_ID = "PL"
+
+logging.info(f"API_KEY set: {bool(API_KEY)}")
+logging.info(f"API_BASE: {API_BASE}")
 
 # Init flask app
 app = Flask(__name__)
@@ -118,10 +121,11 @@ def logout():
 
 # App routes
 def search_clubs_api(query):
-    """Search clubs from API"""
+    """Search clubs from API v4"""
     try:
         url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-        resp = requests.get(url, headers=API_HEADERS)
+        logging.info(f"Fetching clubs from: {url}")
+        resp = requests.get(url, headers=API_HEADERS, timeout=10)
         resp.raise_for_status()
         teams = resp.json().get("teams", [])
         results = []
@@ -134,68 +138,81 @@ def search_clubs_api(query):
                     "stadium": team.get("venue"),
                     "competition_name": "Premier League"
                 })
+        logging.info(f"Found {len(results)} clubs for query: {query}")
         return results
     except Exception as e:
-        logging.error(f"API search error: {e}")
+        logging.error(f"API search error: {str(e)}", exc_info=True)
         return []
 
 def search_players_api(query):
-    """Search players from API"""
+    """Search players from API v4"""
     try:
         url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-        resp = requests.get(url, headers=API_HEADERS)
+        logging.info(f"Fetching teams from: {url}")
+        resp = requests.get(url, headers=API_HEADERS, timeout=10)
         resp.raise_for_status()
         teams = resp.json().get("teams", [])
         results = []
+        
         for team in teams:
-            team_id = team.get("id")
-            team_name = team.get("name")
-            # Fetch squad details
-            squad_url = f"{API_BASE}/teams/{team_id}"
-            squad_resp = requests.get(squad_url, headers=API_HEADERS)
-            squad_resp.raise_for_status()
-            squad = squad_resp.json().get("squad", [])
-            for member in squad:
-                if query.lower() in member.get("name", "").lower() and member.get("role") == "PLAYER":
-                    results.append({
-                        "id": member.get("id"),
-                        "name": member.get("name"),
-                        "position": member.get("position"),
-                        "club_id": team_id,
-                        "club": team_name
-                    })
+            try:
+                team_id = team.get("id")
+                team_name = team.get("name")
+                # Fetch squad details - in v4 the squad is included in the team response
+                squad = team.get("squad", [])
+                
+                for member in squad:
+                    if query.lower() in member.get("name", "").lower() and member.get("position") and member.get("position") != "Coach":
+                        results.append({
+                            "id": member.get("id"),
+                            "name": member.get("name"),
+                            "position": member.get("position"),
+                            "club_id": team_id,
+                            "club": team_name
+                        })
+            except Exception as e:
+                logging.warning(f"Error fetching team {team_id}: {str(e)}")
+                continue
+        
+        logging.info(f"Found {len(results)} players for query: {query}")
         return results
     except Exception as e:
-        logging.error(f"API search error: {e}")
+        logging.error(f"API search error: {str(e)}", exc_info=True)
         return []
 
 def search_trainers_api(query):
-    """Search trainers from API"""
+    """Search trainers from API v4"""
     try:
         url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-        resp = requests.get(url, headers=API_HEADERS)
+        logging.info(f"Fetching teams from: {url}")
+        resp = requests.get(url, headers=API_HEADERS, timeout=10)
         resp.raise_for_status()
         teams = resp.json().get("teams", [])
         results = []
+        
         for team in teams:
-            team_id = team.get("id")
-            team_name = team.get("name")
-            # Fetch squad details
-            squad_url = f"{API_BASE}/teams/{team_id}"
-            squad_resp = requests.get(squad_url, headers=API_HEADERS)
-            squad_resp.raise_for_status()
-            squad = squad_resp.json().get("squad", [])
-            for member in squad:
-                if query.lower() in member.get("name", "").lower() and member.get("role") != "PLAYER":
-                    results.append({
-                        "id": member.get("id"),
-                        "name": member.get("name"),
-                        "club_id": team_id,
-                        "club": team_name
-                    })
+            try:
+                team_id = team.get("id")
+                team_name = team.get("name")
+                # Fetch squad details - in v4 the squad is included in the team response
+                squad = team.get("squad", [])
+                
+                for member in squad:
+                    if query.lower() in member.get("name", "").lower() and member.get("position") == "Coach":
+                        results.append({
+                            "id": member.get("id"),
+                            "name": member.get("name"),
+                            "club_id": team_id,
+                            "club": team_name
+                        })
+            except Exception as e:
+                logging.warning(f"Error fetching team {team_id}: {str(e)}")
+                continue
+        
+        logging.info(f"Found {len(results)} trainers for query: {query}")
         return results
     except Exception as e:
-        logging.error(f"API search error: {e}")
+        logging.error(f"API search error: {str(e)}", exc_info=True)
         return []
 
 @app.route("/", methods=["GET"])

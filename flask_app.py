@@ -336,7 +336,7 @@ def add_trainer():
                     db_write("INSERT OR IGNORE INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
                         (team_id, team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
                     club_id = team_id
-                logging.debug(f"API club matched: {team.get('name')} -> club_id={club_id}")
+                    logging.debug(f"API club matched: {team.get('name')} -> club_id={club_id}")
                 else:
                     # Fallback: nur Name eintragen
                     db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))

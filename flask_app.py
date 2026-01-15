@@ -294,9 +294,10 @@ def add_trainer():
         start_year = request.form.get("start_year")
         end_year = request.form.get("end_year")
         # Club anlegen, falls nicht vorhanden (API holen, falls nötig)
-        club = db_read("SELECT id FROM clubs WHERE name=%s", (club_name,))
+        club = db_read("SELECT id FROM clubs WHERE club_name=%s", (club_name,))
         if club and len(club) > 0 and club[0]:
             club_id = club[0][0] if isinstance(club[0], (list, tuple)) else club[0].get("id")
+        # Versuche Clubdaten von der API zu holen und einzufügen, falls nicht gefunden
         else:
             try:
                 import requests
@@ -306,20 +307,17 @@ def add_trainer():
                 teams = resp.json().get("teams", [])
                 team = next((t for t in teams if t.get("name", "").lower() == club_name.lower()), None)
                 if team:
-                    # Use API club id as primary key, but only insert if not exists
-                    club_id = team.get("id")
-                    club_exists = db_read("SELECT id FROM clubs WHERE id=%s", (club_id,))
-                    if not club_exists:
-                        db_write("INSERT INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
-                            (club_id, team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
+                    db_write("INSERT INTO clubs (name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s)",
+                        (team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
+                    club_id = db_read("SELECT id FROM clubs WHERE name=%s ORDER BY id DESC LIMIT 1", (team.get("name"),))[0][0]
                 else:
                     # Fallback: nur Name eintragen
-                    db_write("INSERT INTO clubs (name) VALUES (%s)", (club_name,))
-                    club_id = db_read("SELECT id FROM clubs WHERE name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+                    db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+                    club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
             except Exception as e:
                 print("Fehler beim API-Club-Insert:", e)
-                db_write("INSERT INTO clubs (name) VALUES (%s)", (club_name,))
-                club_id = db_read("SELECT id FROM clubs WHERE name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+                db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+                club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
         # Trainer und Titel direkt in clubs Tabelle speichern
         db_write("UPDATE clubs SET trainer=%s WHERE id=%s", (coach_name, club_id))
         # Trainer anlegen

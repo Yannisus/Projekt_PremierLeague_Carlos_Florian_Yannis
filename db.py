@@ -179,9 +179,14 @@ if USE_SQLITE:
     def _exec(cur, sql, params=None):
         if params:
             sql = sql.replace("%s", "?")
+            # normalize INSERT IGNORE for sqlite
+            if USE_SQLITE:
+                sql = sql.replace("INSERT IGNORE", "INSERT OR IGNORE")
             cur.execute(sql, params)
         else:
             sql = sql.replace("%s", "?")
+            if USE_SQLITE:
+                sql = sql.replace("INSERT IGNORE", "INSERT OR IGNORE")
             cur.execute(sql)
 
     def db_read(sql, params=None, single=False):

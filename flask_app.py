@@ -203,14 +203,14 @@ def index():
             # Suche zuerst in der API
             results = search_clubs_api(q)
             # Ergänze lokale Clubs, die nicht in der API sind
-            local_clubs = db_read("SELECT id, name, club_name, country, stadium, competition_name, title FROM clubs WHERE club_name LIKE %s OR name LIKE %s OR title LIKE %s", (f"%{q}%", f"%{q}%", f"%{q}%"))
+            local_clubs = db_read("SELECT id, club_name, country, stadium, competition_name, title FROM clubs WHERE club_name LIKE %s OR title LIKE %s", (f"%{q}%", f"%{q}%"))
             api_ids = {r["id"] for r in results}
             for lc in local_clubs:
                 cid = lc.get("id")
                 if cid not in api_ids:
                     results.append({
                         "id": cid,
-                        "name": lc.get("name") or lc.get("club_name"),
+                        "name": lc.get("club_name"),
                         "country": lc.get("country"),
                         "stadium": lc.get("stadium"),
                         "competition_name": lc.get("competition_name"),

@@ -229,6 +229,22 @@ def club(club_id):
                 JOIN players p ON pb.player_id = p.id
                 WHERE pb.club_id = %s
             """, (club_id,))
+            # Wenn keine Spieler in DB, versuche temporär aus API zu holen
+            if not players:
+                url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+                resp = requests.get(url, headers=API_HEADERS, timeout=10)
+                resp.raise_for_status()
+                teams = resp.json().get("teams", [])
+                club_data = next((team for team in teams if team.get("id") == club_id), None)
+                if club_data:
+                    squad = club_data.get("squad", [])
+                    for member in squad:
+                        if member.get("position"):
+                            players.append({
+                                "id": member.get("id"),
+                                "name": member.get("name"),
+                                "position": member.get("position")
+                            })
         else:
             # Wenn nicht vorhanden, von der API holen und in DB speichern
             url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"

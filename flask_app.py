@@ -1,4 +1,4 @@
-from flask import Flask, redirect, render_template, request, url_for
+from flask import Flask, redirect, render_template, request, url_for, flash
 from dotenv import load_dotenv
 import os
 import git 
@@ -204,7 +204,9 @@ def index():
     return render_template("main_page.html", results=results, query=q, type=t)
 
 
-@app.route('/club/<int:club_id>')
+
+# Club-Detailansicht: API-Daten + manuelle Titel
+@app.route('/club/<int:club_id>', methods=["GET", "POST"])
 @login_required
 def club(club_id):
     # Fetch club details from API
@@ -213,16 +215,13 @@ def club(club_id):
         resp = requests.get(url, headers=API_HEADERS, timeout=10)
         resp.raise_for_status()
         teams = resp.json().get("teams", [])
-        
         club_data = None
         for team in teams:
             if team.get("id") == club_id:
                 club_data = team
                 break
-        
         if not club_data:
             return redirect(url_for('index'))
-        
         # Extract club info
         club = {
             "id": club_data.get("id"),
@@ -231,25 +230,49 @@ def club(club_id):
             "stadium": club_data.get("venue"),
             "competition_name": "Premier League"
         }
-        
         # Extract players from squad (v4 API only includes players)
         squad = club_data.get("squad", [])
         players = []
-        
         for member in squad:
-            if member.get("position"):  # All squad members have a position
+            if member.get("position"):
                 players.append({
                     "id": member.get("id"),
                     "name": member.get("name"),
                     "position": member.get("position")
                 })
-        
-        # Trainers and titles are not easily available in v4 free tier
-        trainers = []
-        titles = []
-        
+        # Trainers und Titel aus DB holen
+        trainers = db_read("SELECT coach_name FROM coaches WHERE id IN (SELECT coach_id FROM coaches_by_club WHERE club_id = %s)", (club_id,))
+        titles = db_read("SELECT t.title_name, tp.year_ FROM titles_per_club tp JOIN titles t ON tp.title_id = t.id WHERE tp.club_id = %s ORDER BY tp.year_ DESC", (club_id,))
+
+
+        # Titel hinzufügen
+        if request.method == "POST" and "title_name" in request.form and "title_year" in request.form:
+            title_name = request.form["title_name"].strip()
+            title_year = request.form["title_year"].strip()
+            if title_name and title_year:
+                db_write("INSERT IGNORE INTO titles (title_name) VALUES (%s)", (title_name,))
+                title_row = db_read("SELECT id FROM titles WHERE title_name = %s", (title_name,), single=True)
+                if title_row:
+                    db_write("INSERT INTO titles_per_club (year_, title_id, club_id) VALUES (%s, %s, %s)", (title_year, title_row["id"], club_id))
+                    flash("Title added!", "success")
+                else:
+                    flash("Could not add title.", "danger")
+                return redirect(url_for('club', club_id=club_id))
+
+        # Trainer hinzufügen
+        if request.method == "POST" and "trainer_name" in request.form:
+            trainer_name = request.form["trainer_name"].strip()
+            if trainer_name:
+                db_write("INSERT IGNORE INTO coaches (coach_name) VALUES (%s)", (trainer_name,))
+                coach_row = db_read("SELECT id FROM coaches WHERE coach_name = %s", (trainer_name,), single=True)
+                if coach_row:
+                    db_write("INSERT INTO coaches_by_club (coach_id, club_id) VALUES (%s, %s)", (coach_row["id"], club_id))
+                    flash("Trainer added!", "success")
+                else:
+                    flash("Could not add trainer.", "danger")
+                return redirect(url_for('club', club_id=club_id))
+
         return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
-    
     except Exception as e:
         logging.error(f"Error fetching club {club_id}: {str(e)}", exc_info=True)
         return redirect(url_for('index'))

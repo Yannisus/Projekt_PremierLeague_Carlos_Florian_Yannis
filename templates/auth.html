@@ -3,90 +3,28 @@
 {% block content %}
 <style>
   .auth-wrapper {
-    max-width: 420px;
+    max-width: 400px;
     margin: 50px auto;
   }
-  
   .auth-card {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    animation: slideUp 0.5s ease;
+    background: #ffffff;
+    padding: 30px 30px 25px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
   }
-  
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
   .auth-title {
-    font-size: 28px;
-    font-weight: 700;
-    margin-top: 0;
-    margin-bottom: 25px;
-    color: #1e3c72;
-  }
-  
-  .error {
-    color: #dc3545;
-    margin-bottom: 15px;
-    padding: 12px;
-    background-color: #f8d7da;
-    border-radius: 6px;
-    border-left: 4px solid #dc3545;
-    font-weight: 500;
-  }
-  
-  .form-group label {
+    font-size: 26px;
     font-weight: 600;
-    color: #1e3c72;
-    margin-bottom: 8px;
+    margin-top: 0;
+    margin-bottom: 20px;
   }
-  
-  .form-control {
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 12px;
-    transition: all 0.3s ease;
-    font-size: 15px;
-  }
-  
-  .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  }
-  
-  .btn-primary {
-    width: 100%;
-    margin-top: 20px;
-    padding: 12px;
-    font-weight: 700;
-    font-size: 16px;
-  }
-  
+  .error { color: red; margin-bottom: 15px; }
   .auth-footer-text {
-    font-size: 14px;
-    margin-top: 20px;
+    font-size: 13px;
+    margin-top: 15px;
     text-align: center;
-    color: #666;
   }
-  
-  .auth-footer-text a {
-    color: #667eea;
-    font-weight: 700;
-    text-decoration: none;
-  }
-  
-  .auth-footer-text a:hover {
-    color: #764ba2;
-  }
+  .auth-footer-text a { font-weight: 600; }
 </style>
 
 <div class="auth-wrapper">
@@ -95,30 +33,28 @@
     <h1 class="auth-title">{{ title }}</h1>
 
     {% if error %}
-      <div class="error">
-        <strong>⚠️ Fehler:</strong> {{ error }}
-      </div>
+      <p class="error">{{ error }}</p>
     {% endif %}
 
     <form action="{{ action }}" method="post">
       <div class="form-group">
-        <label for="username">👤 Benutzername</label>
+        <label for="username">Benutzername</label>
         <input
           type="text"
           class="form-control"
           name="username"
-          placeholder="Benutzername eingeben"
+          placeholder="Benutzername"
           required
         >
       </div>
 
       <div class="form-group">
-        <label for="password">🔐 Passwort</label>
+        <label for="password">Passwort</label>
         <input
           type="password"
           class="form-control"
           name="password"
-          placeholder="Passwort eingeben"
+          placeholder="Passwort"
           required
         >
       </div>
@@ -130,8 +66,8 @@
 
     {% if footer_text %}
       <p class="auth-footer-text">
-        {{ footer_text }}<br>
-        <a href="{{ footer_link_url }}">{{ footer_link_label }} →</a>
+        {{ footer_text }}
+        <a href="{{ footer_link_url }}">{{ footer_link_label }}</a>
       </p>
     {% endif %}
 

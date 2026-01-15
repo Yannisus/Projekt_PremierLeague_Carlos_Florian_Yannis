@@ -121,22 +121,22 @@ def index():
     if q:
         if t == "player":
             results = db_read(
-                "SELECT players.id, players.name, players.position, players.club_id, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE ?",
+                "SELECT players.id, players.name, players.position, players.club_id, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s",
                 (f"%{q}%",)
             )
         elif t == "trainer":
             results = db_read(
-                "SELECT trainers.id, trainers.name, trainers.club_id, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE ?",
+                "SELECT trainers.id, trainers.name, trainers.club_id, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s",
                 (f"%{q}%",)
             )
         elif t == "title":
             results = db_read(
-                "SELECT titles.id, titles.title, titles.year, titles.club_id, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE ?",
+                "SELECT titles.id, titles.title, titles.year, titles.club_id, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s",
                 (f"%{q}%",)
             )
         else:  # club
             results = db_read(
-                "SELECT id, name, country, stadium FROM clubs WHERE name LIKE ?",
+                "SELECT id, name, country, stadium FROM clubs WHERE name LIKE %s",
                 (f"%{q}%",)
             )
     
@@ -146,26 +146,24 @@ def index():
 @login_required
 def club(club_id):
     club = db_read(
-        "SELECT id, name, country, stadium FROM clubs WHERE id = ?",
+        "SELECT id, name, country, stadium FROM clubs WHERE id = %s",
         (club_id,),
         single=True
     )
     if not club:
         return redirect(url_for('index'))
     
-    players = db_read("SELECT id, name, position FROM players WHERE club_id = ?", (club_id,))
-    trainers = db_read("SELECT id, name FROM trainers WHERE club_id = ?", (club_id,))
-    titles = db_read("SELECT id, title, year FROM titles WHERE club_id = ? ORDER BY year DESC", (club_id,))
+    players = db_read("SELECT id, name, position FROM players WHERE club_id = %s", (club_id,))
+    trainers = db_read("SELECT id, name FROM trainers WHERE club_id = %s", (club_id,))
+    titles = db_read("SELECT id, title, year FROM titles WHERE club_id = %s ORDER BY year DESC", (club_id,))
     
     return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
-
-# ============ MANAGEMENT ROUTES ============
 
 @app.route("/manage", methods=["GET"])
 @login_required
 def manage():
     clubs = db_read("SELECT id, name, country, stadium FROM clubs")
-    return render_template("manage.html", clubs=clubs)
+    return render_template("manage.html", clubs=clubs or [])
 
 # ============ CLUB ROUTES ============
 
@@ -183,11 +181,12 @@ def new_club():
         else:
             try:
                 db_write(
-                    "INSERT INTO clubs (name, country, stadium) VALUES (?, ?, ?)",
-                    (name, country, stadium)
+                    "INSERT INTO clubs (name, country, stadium) VALUES (%s, %s, %s)",
+                    (name, country or None, stadium or None)
                 )
                 return redirect(url_for("manage"))
             except Exception as e:
+                logging.error(f"Error creating club: {str(e)}", exc_info=True)
                 error = f"Fehler: {str(e)}"
     
     return render_template("new_club.html", error=error)
@@ -197,7 +196,7 @@ def new_club():
 @app.route("/player/new", methods=["GET", "POST"])
 @login_required
 def new_player():
-    clubs = db_read("SELECT id, name FROM clubs")
+    clubs = db_read("SELECT id, name FROM clubs") or []
     error = None
     
     if request.method == "POST":
@@ -210,11 +209,12 @@ def new_player():
         else:
             try:
                 db_write(
-                    "INSERT INTO players (name, position, club_id) VALUES (?, ?, ?)",
-                    (name, position, club_id)
+                    "INSERT INTO players (name, position, club_id) VALUES (%s, %s, %s)",
+                    (name, position or None, club_id)
                 )
                 return redirect(url_for("manage"))
             except Exception as e:
+                logging.error(f"Error creating player: {str(e)}", exc_info=True)
                 error = f"Fehler: {str(e)}"
     
     return render_template("new_player.html", clubs=clubs, error=error)
@@ -224,7 +224,7 @@ def new_player():
 @app.route("/trainer/new", methods=["GET", "POST"])
 @login_required
 def new_trainer():
-    clubs = db_read("SELECT id, name FROM clubs")
+    clubs = db_read("SELECT id, name FROM clubs") or []
     error = None
     
     if request.method == "POST":
@@ -236,11 +236,12 @@ def new_trainer():
         else:
             try:
                 db_write(
-                    "INSERT INTO trainers (name, club_id) VALUES (?, ?)",
+                    "INSERT INTO trainers (name, club_id) VALUES (%s, %s)",
                     (name, club_id)
                 )
                 return redirect(url_for("manage"))
             except Exception as e:
+                logging.error(f"Error creating trainer: {str(e)}", exc_info=True)
                 error = f"Fehler: {str(e)}"
     
     return render_template("new_trainer.html", clubs=clubs, error=error)
@@ -250,7 +251,7 @@ def new_trainer():
 @app.route("/title/new", methods=["GET", "POST"])
 @login_required
 def new_title():
-    clubs = db_read("SELECT id, name FROM clubs")
+    clubs = db_read("SELECT id, name FROM clubs") or []
     error = None
     
     if request.method == "POST":
@@ -263,11 +264,12 @@ def new_title():
         else:
             try:
                 db_write(
-                    "INSERT INTO titles (title, year, club_id) VALUES (?, ?, ?)",
+                    "INSERT INTO titles (title, year, club_id) VALUES (%s, %s, %s)",
                     (title, year, club_id)
                 )
                 return redirect(url_for("manage"))
             except Exception as e:
+                logging.error(f"Error creating title: {str(e)}", exc_info=True)
                 error = f"Fehler: {str(e)}"
     
     return render_template("new_title.html", clubs=clubs, error=error)

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container" style="max-width: 900px; margin-top: 30px;">
+<div style="max-width: 900px; margin: 0 auto;">
   <div class="page-header" style="margin-bottom: 40px;">
     <h1 style="font-size: 36px; margin-bottom: 10px;">🔍 Premier League Search</h1>
     <p class="text-muted" style="font-size: 16px;">Search for clubs, players, trainers and titles</p>
@@ -9,6 +9,131 @@
       ⚙️ Management
     </a>
   </div>
+
+  <div class="panel panel-default" style="padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px;">
+    <form method="get" action="{{ url_for('index') }}">
+      <div class="form-group">
+        <label for="search-input" style="font-weight: bold; margin-bottom: 8px; display: block;">Search:</label>
+        <input id="search-input" name="q" value="{{ query }}" class="form-control" placeholder="e.g. Manchester City, Harry Kane..." style="padding: 12px; font-size: 16px;">
+      </div>
+      
+      <div class="form-group">
+        <label for="search-type" style="font-weight: bold; margin-bottom: 8px; display: block;">Search in:</label>
+        <select id="search-type" name="t" class="form-control" style="padding: 12px; font-size: 16px;">
+          <option value="club" {% if type == 'club' %}selected{% endif %}>⚽ Clubs</option>
+          <option value="player" {% if type == 'player' %}selected{% endif %}>👤 Players</option>
+          <option value="trainer" {% if type == 'trainer' %}selected{% endif %}>🏆 Trainers</option>
+          <option value="title" {% if type == 'title' %}selected{% endif %}>🏅 Titles</option>
+        </select>
+      </div>
+      
+      <button class="btn btn-primary btn-lg" style="width: 100%; margin-top: 15px; padding: 12px; font-size: 16px; font-weight: bold;">
+        Search
+      </button>
+    </form>
+  </div>
+
+  {% if query %}
+  <div style="margin-top: 40px;">
+    <h3 style="font-size: 24px; margin-bottom: 20px; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
+      Results for "<strong>{{ query }}</strong>"
+    </h3>
+    
+    <ul class="list-group">
+      {% if results %}
+        {% for r in results %}
+          <li class="list-group-item" style="margin-bottom: 10px; border-radius: 6px; padding: 15px; transition: all 0.3s; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            {% if type == 'player' %}
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h5 style="margin: 0 0 5px 0; font-size: 18px;">
+                    <strong>{{ r.name }}</strong>
+                  </h5>
+                  <p style="margin: 0; color: #666; font-size: 14px;">
+                    Position: <strong>{{ r.position }}</strong>
+                  </p>
+                </div>
+                {% if r.club %}
+                  <a href="{{ url_for('club', club_id=r.club_id) }}" class="btn btn-sm btn-info">
+                    {{ r.club }} →
+                  </a>
+                {% endif %}
+              </div>
+            {% elif type == 'trainer' %}
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h5 style="margin: 0 0 5px 0; font-size: 18px;">
+                    <strong>{{ r.name }}</strong>
+                  </h5>
+                  <p style="margin: 0; color: #666; font-size: 14px;">
+                    Trainer
+                  </p>
+                </div>
+                {% if r.club %}
+                  <a href="{{ url_for('club', club_id=r.club_id) }}" class="btn btn-sm btn-info">
+                    {{ r.club }} →
+                  </a>
+                {% endif %}
+              </div>
+            {% elif type == 'title' %}
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                  <h5 style="margin: 0 0 5px 0; font-size: 18px;">
+                    <strong>{{ r.title }}</strong>
+                  </h5>
+                  <p style="margin: 0; color: #666; font-size: 14px;">
+                    Jahr: <strong>{{ r.year }}</strong>
+                  </p>
+                </div>
+                {% if r.club %}
+                  <a href="{{ url_for('club', club_id=r.club_id) }}" class="btn btn-sm btn-info">
+                    {{ r.club }} →
+                  </a>
+                {% endif %}
+              </div>
+            {% else %}
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="flex: 1;">
+                  <h5 style="margin: 0 0 8px 0; font-size: 18px;">
+                    <a href="{{ url_for('club', club_id=r.id) }}" style="text-decoration: none; color: #007bff; font-weight: bold;">
+                      {{ r.name }}
+                    </a>
+                  </h5>
+                  <p style="margin: 0; color: #666; font-size: 14px;">
+                    {% if r.country %}<span>📍 {{ r.country }}</span>{% endif %}
+                    {% if r.stadium %}<span style="margin-left: 15px;">🏟️ {{ r.stadium }}</span>{% endif %}
+                  </p>
+                </div>
+                <a href="{{ url_for('club', club_id=r.id) }}" class="btn btn-sm btn-primary">
+                  View Team →
+                </a>
+              </div>
+            {% endif %}
+          </li>
+        {% endfor %}
+      {% else %}
+        <li class="list-group-item" style="text-align: center; padding: 40px; color: #999;">
+          <h4>No results found</h4>
+          <p>Try searching for a different team, player or trainer</p>
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+  {% endif %}
+</div>
+
+<style>
+  .list-group-item:hover {
+    background-color: #f8f9fa;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  }
+  
+  .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  }
+</style>
+{% endblock %}
 
   <div class="panel panel-default" style="padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
     <form method="get" action="{{ url_for('index') }}">

@@ -295,8 +295,36 @@ def add_trainer():
         start_year = request.form.get("start_year")
         end_year = request.form.get("end_year")
         # Club anlegen, falls nicht vorhanden (API holen, falls nötig)
-        # search both `club_name` and `name` columns (API vs manual inserts)
-        club = db_read("SELECT id FROM clubs WHERE club_name=%s OR name=%s", (club_name, club_name))
+        # search for available club identifier columns (MySQL: SHOW COLUMNS, SQLite: PRAGMA)
+        cols = []
+        try:
+            cols_raw = db_read("SHOW COLUMNS FROM clubs")
+            if cols_raw:
+                # MySQL returns list of dicts
+                cols = [c.get('Field') if isinstance(c, dict) else c[0] for c in cols_raw]
+        except Exception:
+            try:
+                cols_raw = db_read("PRAGMA table_info(clubs)")
+                if cols_raw:
+                    cols = [c.get('name') if isinstance(c, dict) else c[1] for c in cols_raw]
+            except Exception:
+                cols = []
+
+        query_parts = []
+        params = []
+        if 'club_name' in cols:
+            query_parts.append('club_name=%s')
+            params.append(club_name)
+        if 'name' in cols:
+            query_parts.append('name=%s')
+            params.append(club_name)
+        if not query_parts:
+            # fallback: try club_name only
+            sql = "SELECT id FROM clubs WHERE club_name=%s"
+            club = db_read(sql, (club_name,))
+        else:
+            sql = "SELECT id FROM clubs WHERE " + " OR ".join(query_parts)
+            club = db_read(sql, tuple(params))
         if club and len(club) > 0 and club[0]:
             if isinstance(club[0], dict):
                 club_id = club[0].get("id")

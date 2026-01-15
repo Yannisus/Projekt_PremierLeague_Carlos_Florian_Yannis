@@ -235,7 +235,7 @@ def club(club_id):
                     "name": member.get("name"),
                     "position": member.get("position")
                 })
-        # Trainer und Titel aus DB holen
+        # Trainer und Titel aus DB holen (auch für API-Clubs)
         club_row = db_read("SELECT * FROM clubs WHERE id=%s", (club_id,), single=True)
         trainers = db_read("""
             SELECT c.coach_firstname, c.coach_name, cp.start_year, cp.end_year
@@ -243,7 +243,8 @@ def club(club_id):
             JOIN coaches c ON cp.coach_id = c.id
             WHERE cp.club_id = %s
         """, (club_id,))
-        if not trainers and club_row and club_row.get("trainer"):
+        # Ergänze Trainer aus clubs-Tabelle, falls kein Eintrag in Join-Tabelle
+        if (not trainers or len(trainers) == 0) and club_row and club_row.get("trainer"):
             trainers = [{"coach_name": club_row["trainer"]}]
         titles = db_read("""
             SELECT t.title_name, tp.year_
@@ -251,7 +252,8 @@ def club(club_id):
             JOIN titles t ON tp.title_id = t.id
             WHERE tp.club_id = %s
         """, (club_id,))
-        if not titles and club_row and club_row.get("title"):
+        # Ergänze Titel aus clubs-Tabelle, falls kein Eintrag in Join-Tabelle
+        if (not titles or len(titles) == 0) and club_row and club_row.get("title"):
             titles = [{"title_name": club_row["title"]}]
         return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
         # Trainer und Titel aus DB holen

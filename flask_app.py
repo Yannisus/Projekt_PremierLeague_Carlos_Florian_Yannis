@@ -8,7 +8,6 @@ from db import db_read, db_write
 from auth import login_manager, authenticate, register_user
 from flask_login import login_user, logout_user, login_required, current_user
 import logging
-import requests
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -18,13 +17,6 @@ logging.basicConfig(
 # Load .env variables
 load_dotenv()
 W_SECRET = os.getenv("W_SECRET")
-API_KEY = os.getenv("FOOTBALL_API_KEY", "c8d4f0a982ae42269ea20d8f123a048e")
-API_BASE = os.getenv("FOOTBALL_API_BASE", "https://api.football-data.org/v4")
-API_HEADERS = {"X-Auth-Token": API_KEY} if API_KEY else {}
-COMPETITION_ID = "PL"
-
-logging.info(f"API_KEY set: {bool(API_KEY)}")
-logging.info(f"API_BASE: {API_BASE}")
 
 # Init flask app
 app = Flask(__name__)
@@ -117,142 +109,168 @@ def logout():
     logout_user()
     return redirect(url_for("index"))
 
-
-
-# App routes
-def search_clubs_api(query):
-    """Search clubs from API v4"""
-    try:
-        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-        logging.info(f"Fetching clubs from: {url}")
-        resp = requests.get(url, headers=API_HEADERS, timeout=10)
-        resp.raise_for_status()
-        teams = resp.json().get("teams", [])
-        results = []
-        for team in teams:
-            if query.lower() in team.get("name", "").lower():
-                results.append({
-                    "id": team.get("id"),
-                    "name": team.get("name"),
-                    "country": team.get("area", {}).get("name"),
-                    "stadium": team.get("venue"),
-                    "competition_name": "Premier League"
-                })
-        logging.info(f"Found {len(results)} clubs for query: {query}")
-        return results
-    except Exception as e:
-        logging.error(f"API search error: {str(e)}", exc_info=True)
-        return []
-
-def search_players_api(query):
-    """Search players from API v4"""
-    try:
-        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-        logging.info(f"Fetching teams from: {url}")
-        resp = requests.get(url, headers=API_HEADERS, timeout=10)
-        resp.raise_for_status()
-        teams = resp.json().get("teams", [])
-        results = []
-        
-        for team in teams:
-            try:
-                team_id = team.get("id")
-                team_name = team.get("name")
-                # Squad is included in the team response in v4
-                squad = team.get("squad", [])
-                
-                for member in squad:
-                    if query.lower() in member.get("name", "").lower():
-                        results.append({
-                            "id": member.get("id"),
-                            "name": member.get("name"),
-                            "position": member.get("position"),
-                            "club_id": team_id,
-                            "club": team_name
-                        })
-            except Exception as e:
-                logging.warning(f"Error processing team {team_id}: {str(e)}")
-                continue
-        
-        logging.info(f"Found {len(results)} players for query: {query}")
-        return results
-    except Exception as e:
-        logging.error(f"API search error: {str(e)}", exc_info=True)
-        return []
-
-def search_trainers_api(query):
-    """Search trainers from API v4 - v4 free tier doesn't easily provide coach data"""
-    # In v4, coaches/trainers are not included in the free tier squad data
-    # Return empty list
-    logging.info("Trainer search not available in v4 free tier")
-    return []
+# ============ SEARCH ROUTES ============
 
 @app.route("/", methods=["GET"])
 @login_required
 def index():
-    # GET: search
     q = request.args.get("q", "")
     t = request.args.get("t", "club")
     results = []
+    
     if q:
         if t == "player":
-            results = search_players_api(q)
+            results = db_read(
+                "SELECT players.id, players.name, players.position, players.club_id, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE ?",
+                (f"%{q}%",)
+            )
         elif t == "trainer":
-            results = search_trainers_api(q)
-        else:
-            results = search_clubs_api(q)
+            results = db_read(
+                "SELECT trainers.id, trainers.name, trainers.club_id, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE ?",
+                (f"%{q}%",)
+            )
+        elif t == "title":
+            results = db_read(
+                "SELECT titles.id, titles.title, titles.year, titles.club_id, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE ?",
+                (f"%{q}%",)
+            )
+        else:  # club
+            results = db_read(
+                "SELECT id, name, country, stadium FROM clubs WHERE name LIKE ?",
+                (f"%{q}%",)
+            )
+    
     return render_template("main_page.html", results=results, query=q, type=t)
-
 
 @app.route('/club/<int:club_id>')
 @login_required
 def club(club_id):
-    # Fetch club details from API
-    try:
-        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-        resp = requests.get(url, headers=API_HEADERS, timeout=10)
-        resp.raise_for_status()
-        teams = resp.json().get("teams", [])
-        
-        club_data = None
-        for team in teams:
-            if team.get("id") == club_id:
-                club_data = team
-                break
-        
-        if not club_data:
-            return redirect(url_for('index'))
-        
-        # Extract club info
-        club = {
-            "id": club_data.get("id"),
-            "name": club_data.get("name"),
-            "country": club_data.get("area", {}).get("name"),
-            "stadium": club_data.get("venue"),
-            "competition_name": "Premier League"
-        }
-        
-        # Extract players from squad (v4 API only includes players)
-        squad = club_data.get("squad", [])
-        players = []
-        
-        for member in squad:
-            if member.get("position"):  # All squad members have a position
-                players.append({
-                    "id": member.get("id"),
-                    "name": member.get("name"),
-                    "position": member.get("position")
-                })
-        
-        # Trainers and titles are not easily available in v4 free tier
-        trainers = []
-        titles = []
-        
-        return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
-    
-    except Exception as e:
-        logging.error(f"Error fetching club {club_id}: {str(e)}", exc_info=True)
+    club = db_read(
+        "SELECT id, name, country, stadium FROM clubs WHERE id = ?",
+        (club_id,),
+        single=True
+    )
+    if not club:
         return redirect(url_for('index'))
+    
+    players = db_read("SELECT id, name, position FROM players WHERE club_id = ?", (club_id,))
+    trainers = db_read("SELECT id, name FROM trainers WHERE club_id = ?", (club_id,))
+    titles = db_read("SELECT id, title, year FROM titles WHERE club_id = ? ORDER BY year DESC", (club_id,))
+    
+    return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
+
+# ============ MANAGEMENT ROUTES ============
+
+@app.route("/manage", methods=["GET"])
+@login_required
+def manage():
+    clubs = db_read("SELECT id, name, country, stadium FROM clubs")
+    return render_template("manage.html", clubs=clubs)
+
+# ============ CLUB ROUTES ============
+
+@app.route("/club/new", methods=["GET", "POST"])
+@login_required
+def new_club():
+    error = None
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        country = request.form.get("country", "").strip()
+        stadium = request.form.get("stadium", "").strip()
+        
+        if not name:
+            error = "Club-Name ist erforderlich"
+        else:
+            try:
+                db_write(
+                    "INSERT INTO clubs (name, country, stadium) VALUES (?, ?, ?)",
+                    (name, country, stadium)
+                )
+                return redirect(url_for("manage"))
+            except Exception as e:
+                error = f"Fehler: {str(e)}"
+    
+    return render_template("new_club.html", error=error)
+
+# ============ PLAYER ROUTES ============
+
+@app.route("/player/new", methods=["GET", "POST"])
+@login_required
+def new_player():
+    clubs = db_read("SELECT id, name FROM clubs")
+    error = None
+    
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        position = request.form.get("position", "").strip()
+        club_id = request.form.get("club_id", "").strip()
+        
+        if not name or not club_id:
+            error = "Name und Club sind erforderlich"
+        else:
+            try:
+                db_write(
+                    "INSERT INTO players (name, position, club_id) VALUES (?, ?, ?)",
+                    (name, position, club_id)
+                )
+                return redirect(url_for("manage"))
+            except Exception as e:
+                error = f"Fehler: {str(e)}"
+    
+    return render_template("new_player.html", clubs=clubs, error=error)
+
+# ============ TRAINER ROUTES ============
+
+@app.route("/trainer/new", methods=["GET", "POST"])
+@login_required
+def new_trainer():
+    clubs = db_read("SELECT id, name FROM clubs")
+    error = None
+    
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        club_id = request.form.get("club_id", "").strip()
+        
+        if not name or not club_id:
+            error = "Name und Club sind erforderlich"
+        else:
+            try:
+                db_write(
+                    "INSERT INTO trainers (name, club_id) VALUES (?, ?)",
+                    (name, club_id)
+                )
+                return redirect(url_for("manage"))
+            except Exception as e:
+                error = f"Fehler: {str(e)}"
+    
+    return render_template("new_trainer.html", clubs=clubs, error=error)
+
+# ============ TITLE ROUTES ============
+
+@app.route("/title/new", methods=["GET", "POST"])
+@login_required
+def new_title():
+    clubs = db_read("SELECT id, name FROM clubs")
+    error = None
+    
+    if request.method == "POST":
+        title = request.form.get("title", "").strip()
+        year = request.form.get("year", "").strip()
+        club_id = request.form.get("club_id", "").strip()
+        
+        if not title or not year or not club_id:
+            error = "Titel, Jahr und Club sind erforderlich"
+        else:
+            try:
+                db_write(
+                    "INSERT INTO titles (title, year, club_id) VALUES (?, ?, ?)",
+                    (title, year, club_id)
+                )
+                return redirect(url_for("manage"))
+            except Exception as e:
+                error = f"Fehler: {str(e)}"
+    
+    return render_template("new_title.html", clubs=clubs, error=error)
 
 @app.route("/users", methods=["GET"])
 @login_required

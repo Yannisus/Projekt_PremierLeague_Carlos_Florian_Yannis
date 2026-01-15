@@ -275,16 +275,23 @@ def add_trainer():
     if request.method == "POST":
         coach_firstname = request.form["coach_firstname"]
         coach_name = request.form["coach_name"]
-        club_id = request.form["club_id"]
+        club_name = request.form["club_name"]
         start_year = request.form.get("start_year")
         end_year = request.form.get("end_year")
+        # Club anlegen, falls nicht vorhanden
+        club = db_read("SELECT id FROM clubs WHERE club_name=%s", (club_name,))
+        if club:
+            club_id = club[0][0]
+        else:
+            db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+            club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+        # Trainer anlegen
         db_write("INSERT INTO coaches (coach_name, coach_firstname) VALUES (%s, %s)", (coach_name, coach_firstname))
         coach_id = db_read("SELECT id FROM coaches WHERE coach_name=%s AND coach_firstname=%s ORDER BY id DESC LIMIT 1", (coach_name, coach_firstname))[0][0]
         db_write("INSERT INTO coaches_per_club (coach_id, club_id, start_year, end_year) VALUES (%s, %s, %s, %s)", (coach_id, club_id, start_year, end_year))
         flash("Trainer erfolgreich hinzugefügt.")
         return redirect(url_for("add_trainer"))
-    clubs = db_read("SELECT id, club_name FROM clubs", ())
-    return render_template("add_trainer.html", clubs=clubs)
+    return render_template("add_trainer.html")
 
 # === Titel manuell hinzufügen ===
 @app.route("/add_title", methods=["GET", "POST"])
@@ -292,15 +299,22 @@ def add_trainer():
 def add_title():
     if request.method == "POST":
         title_name = request.form["title_name"]
-        club_id = request.form["club_id"]
+        club_name = request.form["club_name"]
         year_ = request.form["year_"]
+        # Club anlegen, falls nicht vorhanden
+        club = db_read("SELECT id FROM clubs WHERE club_name=%s", (club_name,))
+        if club:
+            club_id = club[0][0]
+        else:
+            db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+            club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+        # Titel anlegen
         db_write("INSERT INTO titles (title_name) VALUES (%s)", (title_name,))
         title_id = db_read("SELECT id FROM titles WHERE title_name=%s ORDER BY id DESC LIMIT 1", (title_name,))[0][0]
         db_write("INSERT INTO titles_per_club (year_, title_id, club_id) VALUES (%s, %s, %s)", (year_, title_id, club_id))
         flash("Titel erfolgreich hinzugefügt.")
         return redirect(url_for("add_title"))
-    clubs = db_read("SELECT id, club_name FROM clubs", ())
-    return render_template("add_title.html", clubs=clubs)
+    return render_template("add_title.html")
 
 if __name__ == "__main__":
     app.run()

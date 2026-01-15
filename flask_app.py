@@ -305,9 +305,7 @@ def add_trainer():
             else:
                 club_id = None
         else:
-            club_id = None
-        # Versuche Clubdaten von der API zu holen und einzufügen, falls nicht gefunden
-        else:
+            # Versuche Clubdaten von der API zu holen und einzufügen, falls nicht gefunden
             try:
                 import requests
                 url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"

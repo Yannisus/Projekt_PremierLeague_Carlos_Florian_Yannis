@@ -297,8 +297,6 @@ def add_trainer():
         if club and len(club) > 0 and club[0]:
             club_id = club[0][0] if isinstance(club[0], (list, tuple)) else club[0].get("id")
         else:
-            club_id = None
-        else:
             # Versuche Clubdaten von der API zu holen und einzufügen
             try:
                 import requests

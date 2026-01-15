@@ -1,43 +1,33 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container" style="max-width: 500px; margin-top: 30px;">
-  <div class="page-header" style="margin-bottom: 30px;">
-    <h1 style="font-size: 32px; margin-bottom: 10px;">⚽ Neuer Club</h1>
-    <p class="text-muted">Erstelle einen neuen Club</p>
-  </div>
-
+<div style="max-width: 500px;">
+  <h3>Neuer Club</h3>
+  
   {% if error %}
-    <div style="background-color: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #f5c6cb;">
-      <strong>⚠️ Fehler:</strong> {{ error }}
-    </div>
+    <div class="alert alert-danger">{{ error }}</div>
   {% endif %}
 
-  <form method="post" class="panel panel-default" style="padding: 30px; border-radius: 8px;">
-    <div class="form-group">
-      <label for="name" style="font-weight: bold;">Club-Name *</label>
-      <input type="text" class="form-control" id="name" name="name" placeholder="z.B. Manchester City" required>
-    </div>
+  <form method="post" class="panel panel-default">
+    <div class="panel-body">
+      <div class="form-group">
+        <label>Club-Name *</label>
+        <input type="text" class="form-control" name="name" placeholder="z.B. Manchester City" required>
+      </div>
 
-    <div class="form-group">
-      <label for="country" style="font-weight: bold;">Land</label>
-      <input type="text" class="form-control" id="country" name="country" placeholder="z.B. England">
-    </div>
+      <div class="form-group">
+        <label>Land</label>
+        <input type="text" class="form-control" name="country" placeholder="z.B. England">
+      </div>
 
-    <div class="form-group">
-      <label for="stadium" style="font-weight: bold;">Stadion</label>
-      <input type="text" class="form-control" id="stadium" name="stadium" placeholder="z.B. Etihad Stadium">
-    </div>
+      <div class="form-group">
+        <label>Stadion</label>
+        <input type="text" class="form-control" name="stadium" placeholder="z.B. Etihad Stadium">
+      </div>
 
-    <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 20px;">
-      Club erstellen
-    </button>
+      <button type="submit" class="btn btn-primary">Erstellen</button>
+      <a href="{{ url_for('index') }}" class="btn btn-default">Abbrechen</a>
+    </div>
   </form>
-
-  <div style="margin-top: 20px; text-align: center;">
-    <a href="{{ url_for('manage') }}" class="btn btn-default">
-      ← Zurück
-    </a>
-  </div>
 </div>
 {% endblock %}

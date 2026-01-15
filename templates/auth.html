@@ -1,140 +1,38 @@
 {% extends "base.html" %}
 
 {% block content %}
-<style>
-  .auth-wrapper {
-    max-width: 420px;
-    margin: 50px auto;
-  }
-  
-  .auth-card {
-    background: white;
-    padding: 40px;
-    border-radius: 12px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-    animation: slideUp 0.5s ease;
-  }
-  
-  @keyframes slideUp {
-    from {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  .auth-title {
-    font-size: 28px;
-    font-weight: 700;
-    margin-top: 0;
-    margin-bottom: 25px;
-    color: #1e3c72;
-  }
-  
-  .error {
-    color: #dc3545;
-    margin-bottom: 15px;
-    padding: 12px;
-    background-color: #f8d7da;
-    border-radius: 6px;
-    border-left: 4px solid #dc3545;
-    font-weight: 500;
-  }
-  
-  .form-group label {
-    font-weight: 600;
-    color: #1e3c72;
-    margin-bottom: 8px;
-  }
-  
-  .form-control {
-    border: 2px solid #e0e0e0;
-    border-radius: 6px;
-    padding: 12px;
-    transition: all 0.3s ease;
-    font-size: 15px;
-  }
-  
-  .form-control:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  }
-  
-  .btn-primary {
-    width: 100%;
-    margin-top: 20px;
-    padding: 12px;
-    font-weight: 700;
-    font-size: 16px;
-  }
-  
-  .auth-footer-text {
-    font-size: 14px;
-    margin-top: 20px;
-    text-align: center;
-    color: #666;
-  }
-  
-  .auth-footer-text a {
-    color: #667eea;
-    font-weight: 700;
-    text-decoration: none;
-  }
-  
-  .auth-footer-text a:hover {
-    color: #764ba2;
-  }
-</style>
+<div style="max-width: 400px; margin: 40px auto;">
+  <div class="panel panel-default">
+    <div class="panel-heading">
+      <h3 style="margin: 0;">{{ title }}</h3>
+    </div>
+    <div class="panel-body">
+      {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
 
-<div class="auth-wrapper">
-  <div class="auth-card">
+      <form action="{{ action }}" method="post">
+        <div class="form-group">
+          <label>Benutzername</label>
+          <input type="text" class="form-control" name="username" placeholder="Benutzername" required>
+        </div>
 
-    <h1 class="auth-title">{{ title }}</h1>
+        <div class="form-group">
+          <label>Passwort</label>
+          <input type="password" class="form-control" name="password" placeholder="Passwort" required>
+        </div>
 
-    {% if error %}
-      <div class="error">
-        <strong>⚠️ Fehler:</strong> {{ error }}
-      </div>
-    {% endif %}
+        <button type="submit" class="btn btn-primary btn-block">{{ button_label }}</button>
+      </form>
 
-    <form action="{{ action }}" method="post">
-      <div class="form-group">
-        <label for="username">👤 Benutzername</label>
-        <input
-          type="text"
-          class="form-control"
-          name="username"
-          placeholder="Benutzername eingeben"
-          required
-        >
-      </div>
-
-      <div class="form-group">
-        <label for="password">🔐 Passwort</label>
-        <input
-          type="password"
-          class="form-control"
-          name="password"
-          placeholder="Passwort eingeben"
-          required
-        >
-      </div>
-
-      <button type="submit" class="btn btn-primary btn-block">
-        {{ button_label }}
-      </button>
-    </form>
-
-    {% if footer_text %}
-      <p class="auth-footer-text">
-        {{ footer_text }}<br>
-        <a href="{{ footer_link_url }}">{{ footer_link_label }} →</a>
-      </p>
-    {% endif %}
-
+      {% if footer_text %}
+        <hr>
+        <p style="text-align: center; margin-bottom: 0;">
+          {{ footer_text }}<br>
+          <a href="{{ footer_link_url }}">{{ footer_link_label }}</a>
+        </p>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% endblock %}

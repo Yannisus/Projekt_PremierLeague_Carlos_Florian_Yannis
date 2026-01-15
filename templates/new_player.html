@@ -1,51 +1,41 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="container" style="max-width: 500px; margin-top: 30px;">
-  <div class="page-header" style="margin-bottom: 30px;">
-    <h1 style="font-size: 32px; margin-bottom: 10px;">👤 Neuer Spieler</h1>
-    <p class="text-muted">Füge einen Spieler zu einem Club hinzu</p>
-  </div>
-
+<div style="max-width: 500px;">
+  <h3>Neuer Spieler</h3>
+  
   {% if error %}
-    <div style="background-color: #f8d7da; color: #721c24; padding: 12px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #f5c6cb;">
-      <strong>⚠️ Fehler:</strong> {{ error }}
-    </div>
+    <div class="alert alert-danger">{{ error }}</div>
   {% endif %}
 
-  <form method="post" class="panel panel-default" style="padding: 30px; border-radius: 8px;">
-    <div class="form-group">
-      <label for="name" style="font-weight: bold;">Spieler-Name *</label>
-      <input type="text" class="form-control" id="name" name="name" placeholder="z.B. Harry Kane" required>
-    </div>
+  <form method="post" class="panel panel-default">
+    <div class="panel-body">
+      <div class="form-group">
+        <label>Spieler-Name *</label>
+        <input type="text" class="form-control" name="name" placeholder="z.B. Harry Kane" required>
+      </div>
 
-    <div class="form-group">
-      <label for="position" style="font-weight: bold;">Position</label>
-      <input type="text" class="form-control" id="position" name="position" placeholder="z.B. Striker, Defender">
-    </div>
+      <div class="form-group">
+        <label>Position</label>
+        <input type="text" class="form-control" name="position" placeholder="z.B. Striker, Defender">
+      </div>
 
-    <div class="form-group">
-      <label for="club_id" style="font-weight: bold;">Club *</label>
-      <select class="form-control" id="club_id" name="club_id" required>
-        <option value="">-- Club wählen --</option>
-        {% for club in clubs %}
-          <option value="{{ club.id }}">{{ club.name }}</option>
-        {% endfor %}
-      </select>
-      {% if not clubs %}
-        <p style="color: #dc3545; margin-top: 10px;">⚠️ Bitte erstelle zuerst einen Club</p>
-      {% endif %}
-    </div>
+      <div class="form-group">
+        <label>Club *</label>
+        <select class="form-control" name="club_id" required>
+          <option value="">-- Club wählen --</option>
+          {% for club in clubs %}
+            <option value="{{ club.id }}">{{ club.name }}</option>
+          {% endfor %}
+        </select>
+        {% if not clubs %}
+          <p style="color: red; margin-top: 5px;">Bitte erstelle zuerst einen Club</p>
+        {% endif %}
+      </div>
 
-    <button type="submit" class="btn btn-primary btn-lg" style="width: 100%; margin-top: 20px;">
-      Spieler hinzufügen
-    </button>
+      <button type="submit" class="btn btn-primary">Erstellen</button>
+      <a href="{{ url_for('index') }}" class="btn btn-default">Abbrechen</a>
+    </div>
   </form>
-
-  <div style="margin-top: 20px; text-align: center;">
-    <a href="{{ url_for('manage') }}" class="btn btn-default">
-      ← Zurück
-    </a>
-  </div>
 </div>
 {% endblock %}

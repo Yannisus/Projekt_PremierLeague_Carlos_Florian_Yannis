@@ -22,7 +22,17 @@ if DB_CONFIG.get("host"):
         def get_conn():
             return pool.get_connection()
 
+        def _normalize_sql(sql: str) -> str:
+            if not sql:
+                return sql
+            # MySQL uses `INSERT IGNORE`, SQLite uses `INSERT OR IGNORE`
+            if USE_SQLITE:
+                return sql.replace("INSERT IGNORE", "INSERT OR IGNORE")
+            else:
+                return sql.replace("INSERT OR IGNORE", "INSERT IGNORE")
+
         def db_read(sql, params=None, single=False):
+            sql = _normalize_sql(sql)
             conn = get_conn()
             try:
                 cur = conn.cursor(dictionary=True)
@@ -45,6 +55,7 @@ if DB_CONFIG.get("host"):
                 conn.close()
 
         def db_write(sql, params=None):
+            sql = _normalize_sql(sql)
             conn = get_conn()
             try:
                 cur = conn.cursor()

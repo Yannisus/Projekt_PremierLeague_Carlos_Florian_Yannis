@@ -296,8 +296,8 @@ def add_trainer():
         club = db_read("SELECT id FROM clubs WHERE club_name=%s", (club_name,))
         if club and len(club) > 0 and club[0]:
             club_id = club[0][0] if isinstance(club[0], (list, tuple)) else club[0].get("id")
+        # Versuche Clubdaten von der API zu holen und einzufügen, falls nicht gefunden
         else:
-            # Versuche Clubdaten von der API zu holen und einzufügen
             try:
                 import requests
                 url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"

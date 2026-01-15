@@ -64,6 +64,7 @@ else:
     def _ensure_schema():
         conn = sqlite3.connect(DB_FILE)
         cur = conn.cursor()
+        # Create tables aligned with MySQL schema (db/main.sql)
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS users (
@@ -75,32 +76,46 @@ else:
         )
         cur.execute(
             """
+            CREATE TABLE IF NOT EXISTS players (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                player_name TEXT,
+                player_firstname TEXT,
+                player_identifier TEXT
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS coaches (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                coach_name TEXT,
+                coach_firstname TEXT
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS coaches_per_club (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                coach_id INTEGER NOT NULL,
+                club_id INTEGER NOT NULL,
+                start_year INTEGER,
+                end_year INTEGER
+            )
+            """
+        )
+        cur.execute(
+            """
             CREATE TABLE IF NOT EXISTS clubs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT UNIQUE,
+                club_name TEXT,
+                name TEXT,
                 country TEXT,
                 stadium TEXT,
                 competition_id INTEGER,
-                competition_name TEXT
-            )
-            """
-        )
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS players (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                club_id INTEGER,
-                position TEXT
-            )
-            """
-        )
-        cur.execute(
-            """
-            CREATE TABLE IF NOT EXISTS trainers (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT,
-                club_id INTEGER
+                competition_name TEXT,
+                trainer TEXT,
+                title TEXT
             )
             """
         )
@@ -108,9 +123,26 @@ else:
             """
             CREATE TABLE IF NOT EXISTS titles (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title_name TEXT
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS players_by_club (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
                 club_id INTEGER,
-                title TEXT,
-                year INTEGER
+                player_id INTEGER
+            )
+            """
+        )
+        cur.execute(
+            """
+            CREATE TABLE IF NOT EXISTS titles_per_club (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                year_ INTEGER,
+                title_id INTEGER,
+                club_id INTEGER
             )
             """
         )

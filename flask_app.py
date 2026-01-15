@@ -278,13 +278,26 @@ def add_trainer():
         club_name = request.form["club_name"]
         start_year = request.form.get("start_year")
         end_year = request.form.get("end_year")
-        # Club anlegen, falls nicht vorhanden
+        # Club anlegen, falls nicht vorhanden (API holen, falls nötig)
         club = db_read("SELECT id FROM clubs WHERE club_name=%s", (club_name,))
         if club:
             club_id = club[0][0]
         else:
-            db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
-            club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+            # Versuche Clubdaten von der API zu holen und einzufügen
+            try:
+                from scripts.fetch_api import fetch_teams, upsert_club
+                teams = fetch_teams()
+                team = next((t for t in teams if t.get("name", "").lower() == club_name.lower()), None)
+                if team:
+                    club_id = upsert_club(team)
+                else:
+                    # Fallback: nur Name eintragen
+                    db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+                    club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+            except Exception as e:
+                print("Fehler beim API-Club-Insert:", e)
+                db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+                club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
         # Trainer anlegen
         db_write("INSERT INTO coaches (coach_name, coach_firstname) VALUES (%s, %s)", (coach_name, coach_firstname))
         coach_id = db_read("SELECT id FROM coaches WHERE coach_name=%s AND coach_firstname=%s ORDER BY id DESC LIMIT 1", (coach_name, coach_firstname))[0][0]
@@ -302,13 +315,24 @@ def add_title():
         title_name = request.form["title_name"]
         club_name = request.form["club_name"]
         year_ = request.form["year_"]
-        # Club anlegen, falls nicht vorhanden
+        # Club anlegen, falls nicht vorhanden (API holen, falls nötig)
         club = db_read("SELECT id FROM clubs WHERE club_name=%s", (club_name,))
         if club:
             club_id = club[0][0]
         else:
-            db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
-            club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+            try:
+                from scripts.fetch_api import fetch_teams, upsert_club
+                teams = fetch_teams()
+                team = next((t for t in teams if t.get("name", "").lower() == club_name.lower()), None)
+                if team:
+                    club_id = upsert_club(team)
+                else:
+                    db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+                    club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+            except Exception as e:
+                print("Fehler beim API-Club-Insert:", e)
+                db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+                club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
         # Titel anlegen
         db_write("INSERT INTO titles (title_name) VALUES (%s)", (title_name,))
         title_id = db_read("SELECT id FROM titles WHERE title_name=%s ORDER BY id DESC LIMIT 1", (title_name,))[0][0]

@@ -29,7 +29,12 @@ CREATE TABLE coaches_per_club (
 
 CREATE TABLE clubs (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    club_name VARCHAR(250) NOT NULL
+    club_name VARCHAR(250) NOT NULL,
+    name VARCHAR(250),
+    country VARCHAR(100),
+    stadium VARCHAR(250),
+    competition_id INT,
+    competition_name VARCHAR(100)
 );
 
 CREATE TABLE titles (

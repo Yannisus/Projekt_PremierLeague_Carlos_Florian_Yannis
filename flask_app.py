@@ -237,13 +237,29 @@ def club(club_id):
                     "position": member.get("position")
                 })
         # Trainer und Titel aus DB holen (auch für API-Clubs)
+        # attempt to find a matching local club row either by id (API id stored) or by name
         club_row = db_read("SELECT * FROM clubs WHERE id=%s", (club_id,), single=True)
-        trainers = db_read("""
+        local_club_id = None
+        if not club_row:
+            # try matching by name columns
+            name_row = db_read("SELECT id FROM clubs WHERE club_name=%s OR name=%s ORDER BY id DESC LIMIT 1", (club.get('name'), club.get('name')), single=True)
+            if name_row:
+                local_club_id = name_row.get('id') if isinstance(name_row, dict) else (name_row[0] if isinstance(name_row, (list, tuple)) else None)
+        else:
+            local_club_id = club_row.get('id')
+
+        # collect possible club_ids to search in joins: API id and local id (if different)
+        search_ids = [club_id]
+        if local_club_id and local_club_id != club_id:
+            search_ids.append(local_club_id)
+
+        placeholders = ','.join(['%s'] * len(search_ids))
+        trainers = db_read(f"""
             SELECT c.coach_firstname, c.coach_name, cp.start_year, cp.end_year
             FROM coaches_per_club cp
             JOIN coaches c ON cp.coach_id = c.id
-            WHERE cp.club_id = %s
-        """, (club_id,))
+            WHERE cp.club_id IN ({placeholders})
+        """.replace('{placeholders}', placeholders), tuple(search_ids))
         # Ergänze Trainer aus clubs-Tabelle, falls kein Eintrag in Join-Tabelle
         if (not trainers or len(trainers) == 0) and club_row and club_row.get("trainer"):
             trainers = [{"coach_name": club_row["trainer"]}]
@@ -251,8 +267,8 @@ def club(club_id):
             SELECT t.title_name, tp.year_
             FROM titles_per_club tp
             JOIN titles t ON tp.title_id = t.id
-            WHERE tp.club_id = %s
-        """, (club_id,))
+            WHERE tp.club_id IN (%s)
+        """.replace('%s', ','.join(['%s'] * len(search_ids))), tuple(search_ids))
         # Ergänze Titel aus clubs-Tabelle, falls kein Eintrag in Join-Tabelle
         if (not titles or len(titles) == 0) and club_row and club_row.get("title"):
             titles = [{"title_name": club_row["title"]}]

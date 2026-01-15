@@ -138,21 +138,6 @@ def search_clubs_api(query):
                     "stadium": team.get("venue"),
                     "competition_name": "Premier League"
                 })
-        # Ergänze lokale Clubs, die nicht in der API sind
-        from db import db_read
-        local_clubs = db_read("SELECT id, name, club_name, country, stadium, competition_name FROM clubs")
-        for lc in local_clubs:
-            lc_name = lc.get("name") or lc.get("club_name")
-            if lc_name and query.lower() in lc_name.lower():
-                # Prüfe, ob schon in API-Ergebnissen
-                if not any(r["id"] == lc["id"] for r in results):
-                    results.append({
-                        "id": lc["id"],
-                        "name": lc_name,
-                        "country": lc.get("country"),
-                        "stadium": lc.get("stadium"),
-                        "competition_name": lc.get("competition_name")
-                    })
         logging.info(f"Found {len(results)} clubs for query: {query}")
         return results
     except Exception as e:

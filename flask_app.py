@@ -312,6 +312,7 @@ def add_trainer():
                 resp = requests.get(url, headers=API_HEADERS, timeout=10)
                 resp.raise_for_status()
                 teams = resp.json().get("teams", [])
+
                 # improved matching: normalize names (remove non-alnum) and allow partial matches
                 def _norm(s):
                     return re.sub(r'[^a-z0-9]', '', (s or '').lower())
@@ -330,21 +331,36 @@ def add_trainer():
                         if query_norm and (query_norm in tn or tn in query_norm):
                             team = t
                             break
+
                 if team:
                     team_id = team.get("id")
                     # Ensure we store the API club id so coaches_per_club references match the API-based club pages
-                    db_write("INSERT OR IGNORE INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
-                        (team_id, team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
+                    db_write(
+                        "INSERT OR IGNORE INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
+                        (team_id, team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"),
+                    )
                     club_id = team_id
-                    logging.debug(f"API club matched: {team.get('name')} -> club_id={club_id}")
+                    logging.debug("API club matched: %s -> club_id=%s", team.get('name'), club_id)
                 else:
                     # Fallback: nur Name eintragen
                     db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
-                    club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
-                except Exception as e:
-                    logging.error("Fehler beim API-Club-Insert: %s", e, exc_info=True)
-                    db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
-                    club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+                    row = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,), single=True)
+                    if isinstance(row, dict):
+                        club_id = row.get('id')
+                    elif isinstance(row, (list, tuple)):
+                        club_id = row[0]
+                    else:
+                        club_id = None
+            except Exception as e:
+                logging.error("Fehler beim API-Club-Insert: %s", e, exc_info=True)
+                db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+                row = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,), single=True)
+                if isinstance(row, dict):
+                    club_id = row.get('id')
+                elif isinstance(row, (list, tuple)):
+                    club_id = row[0]
+                else:
+                    club_id = None
         # Trainer und Titel direkt in clubs Tabelle speichern
         db_write("UPDATE clubs SET trainer=%s WHERE id=%s", (coach_name, club_id))
         # Trainer anlegen

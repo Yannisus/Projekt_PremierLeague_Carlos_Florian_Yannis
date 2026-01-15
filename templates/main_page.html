@@ -20,6 +20,18 @@
     <button class="btn btn-primary">Search</button>
   </form>
 
+
+  {% if request.args.get('notify') == 'trainer_added' %}
+    <div id="notify" class="alert alert-success" style="position:fixed;top:70px;right:30px;z-index:9999;">
+      Trainer erfolgreich hinzugefügt!
+    </div>
+    <script>
+      setTimeout(function() {
+        var n = document.getElementById('notify');
+        if(n) n.style.display = 'none';
+      }, 5000);
+    </script>
+  {% endif %}
   <hr>
 
   {% if query %}

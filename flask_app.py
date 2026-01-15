@@ -290,7 +290,8 @@ def add_trainer():
         coach_id = db_read("SELECT id FROM coaches WHERE coach_name=%s AND coach_firstname=%s ORDER BY id DESC LIMIT 1", (coach_name, coach_firstname))[0][0]
         db_write("INSERT INTO coaches_per_club (coach_id, club_id, start_year, end_year) VALUES (%s, %s, %s, %s)", (coach_id, club_id, start_year, end_year))
         flash("Trainer erfolgreich hinzugefügt.")
-        return redirect(url_for("add_trainer"))
+        # Nach dem Hinzufügen zur Suche weiterleiten und Notify anzeigen
+        return redirect(url_for("index", notify="trainer_added"))
     return render_template("add_trainer.html")
 
 # === Titel manuell hinzufügen ===

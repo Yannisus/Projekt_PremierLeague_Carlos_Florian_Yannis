@@ -15,42 +15,23 @@
     {% endfor %}
   </ul>
 
-
   <h3>Trainers</h3>
   <ul class="list-group">
     {% for t in trainers %}
-      <li class="list-group-item">{{ t.coach_name }}</li>
+      <li class="list-group-item">{{ t.name }}</li>
     {% else %}
       <li class="list-group-item">No trainers listed.</li>
     {% endfor %}
   </ul>
 
-  <form method="post" class="form-inline" style="margin-top: 1em;">
-    <div class="form-group">
-      <input name="trainer_name" class="form-control" placeholder="Trainer name">
-    </div>
-    <button class="btn btn-success">Add Trainer</button>
-  </form>
-
-
   <h3>Titles</h3>
   <ul class="list-group">
     {% for ti in titles %}
-      <li class="list-group-item">{{ ti.title_name }} — {{ ti.year_ }}</li>
+      <li class="list-group-item">{{ ti.title }} — {{ ti.year }}</li>
     {% else %}
       <li class="list-group-item">No titles listed.</li>
     {% endfor %}
   </ul>
-
-  <form method="post" class="form-inline" style="margin-top: 1em;">
-    <div class="form-group">
-      <input name="title_name" class="form-control" placeholder="Title name">
-    </div>
-    <div class="form-group">
-      <input name="title_year" class="form-control" placeholder="Year" style="width: 6em;">
-    </div>
-    <button class="btn btn-success">Add Title</button>
-  </form>
 
   <a class="btn btn-default" href="{{ url_for('index') }}">Back to search</a>
 {% endblock %}

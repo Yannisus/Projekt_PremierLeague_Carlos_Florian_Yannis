@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Trainer hinzufügen</h2>
+<form method="post">
+    <label for="coach_firstname">Vorname:</label>
+    <input type="text" name="coach_firstname" required><br>
+    <label for="coach_name">Nachname:</label>
+    <input type="text" name="coach_name" required><br>
+    <label for="club_id">Club:</label>
+    <select name="club_id" required>
+        {% for club in clubs %}
+        <option value="{{ club[0] }}">{{ club[1] }}</option>
+        {% endfor %}
+    </select><br>
+    <label for="start_year">Startjahr:</label>
+    <input type="number" name="start_year" min="1800" max="2100"><br>
+    <label for="end_year">Endjahr:</label>
+    <input type="number" name="end_year" min="1800" max="2100"><br>
+    <button type="submit">Trainer hinzufügen</button>
+</form>
+{% endblock %}

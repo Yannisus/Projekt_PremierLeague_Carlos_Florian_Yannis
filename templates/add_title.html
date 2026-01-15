@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Titel hinzufügen</h2>
+<form method="post">
+    <label for="title_name">Titelname:</label>
+    <input type="text" name="title_name" required><br>
+    <label for="club_id">Club:</label>
+    <select name="club_id" required>
+        {% for club in clubs %}
+        <option value="{{ club[0] }}">{{ club[1] }}</option>
+        {% endfor %}
+    </select><br>
+    <label for="year_">Jahr:</label>
+    <input type="number" name="year_" min="1800" max="2100" required><br>
+    <button type="submit">Titel hinzufügen</button>
+</form>
+{% endblock %}

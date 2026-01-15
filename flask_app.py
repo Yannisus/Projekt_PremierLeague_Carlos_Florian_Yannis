@@ -244,10 +244,19 @@ def club(club_id):
                     "position": member.get("position")
                 })
         
-        # Trainers and titles are not easily available in v4 free tier
-        trainers = []
-        titles = []
-        
+        # Trainer und Titel aus DB holen
+        trainers = db_read("""
+            SELECT c.coach_firstname, c.coach_name, cp.start_year, cp.end_year
+            FROM coaches_per_club cp
+            JOIN coaches c ON cp.coach_id = c.id
+            WHERE cp.club_id = %s
+        """, (club_id,))
+        titles = db_read("""
+            SELECT t.title_name, tp.year_
+            FROM titles_per_club tp
+            JOIN titles t ON tp.title_id = t.id
+            WHERE tp.club_id = %s
+        """, (club_id,))
         return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
     
     except Exception as e:
@@ -258,6 +267,40 @@ def club(club_id):
 @login_required
 def users():
     pass
+
+# === Trainer manuell hinzufügen ===
+@app.route("/add_trainer", methods=["GET", "POST"])
+@login_required
+def add_trainer():
+    if request.method == "POST":
+        coach_firstname = request.form["coach_firstname"]
+        coach_name = request.form["coach_name"]
+        club_id = request.form["club_id"]
+        start_year = request.form.get("start_year")
+        end_year = request.form.get("end_year")
+        db_write("INSERT INTO coaches (coach_name, coach_firstname) VALUES (%s, %s)", (coach_name, coach_firstname))
+        coach_id = db_read("SELECT id FROM coaches WHERE coach_name=%s AND coach_firstname=%s ORDER BY id DESC LIMIT 1", (coach_name, coach_firstname))[0][0]
+        db_write("INSERT INTO coaches_per_club (coach_id, club_id, start_year, end_year) VALUES (%s, %s, %s, %s)", (coach_id, club_id, start_year, end_year))
+        flash("Trainer erfolgreich hinzugefügt.")
+        return redirect(url_for("add_trainer"))
+    clubs = db_read("SELECT id, club_name FROM clubs", ())
+    return render_template("add_trainer.html", clubs=clubs)
+
+# === Titel manuell hinzufügen ===
+@app.route("/add_title", methods=["GET", "POST"])
+@login_required
+def add_title():
+    if request.method == "POST":
+        title_name = request.form["title_name"]
+        club_id = request.form["club_id"]
+        year_ = request.form["year_"]
+        db_write("INSERT INTO titles (title_name) VALUES (%s)", (title_name,))
+        title_id = db_read("SELECT id FROM titles WHERE title_name=%s ORDER BY id DESC LIMIT 1", (title_name,))[0][0]
+        db_write("INSERT INTO titles_per_club (year_, title_id, club_id) VALUES (%s, %s, %s)", (year_, title_id, club_id))
+        flash("Titel erfolgreich hinzugefügt.")
+        return redirect(url_for("add_title"))
+    clubs = db_read("SELECT id, club_name FROM clubs", ())
+    return render_template("add_title.html", clubs=clubs)
 
 if __name__ == "__main__":
     app.run()

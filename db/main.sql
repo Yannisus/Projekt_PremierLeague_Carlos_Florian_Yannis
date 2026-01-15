@@ -17,6 +17,16 @@ CREATE TABLE coaches (
     coach_firstname VARCHAR(250) NOT NULL
 );
 
+CREATE TABLE coaches_per_club (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    coach_id INT NOT NULL,
+    club_id INT NOT NULL,
+    start_year YEAR,
+    end_year YEAR,
+    FOREIGN KEY (coach_id) REFERENCES coaches(id),
+    FOREIGN KEY (club_id) REFERENCES clubs(id)
+);
+
 CREATE TABLE clubs (
     id INT AUTO_INCREMENT PRIMARY KEY,
     club_name VARCHAR(250) NOT NULL

@@ -117,6 +117,7 @@ def index():
     q = request.args.get("q", "")
     t = request.args.get("t", "club")
     results = []
+    clubs = db_read("SELECT id, name, country, stadium FROM clubs") or []
     
     if q:
         if t == "player":
@@ -140,7 +141,7 @@ def index():
                 (f"%{q}%",)
             )
     
-    return render_template("main_page.html", results=results, query=q, type=t)
+    return render_template("main_page.html", results=results, query=q, type=t, clubs=clubs)
 
 @app.route('/club/<int:club_id>')
 @login_required
@@ -184,7 +185,7 @@ def new_club():
                     "INSERT INTO clubs (name, country, stadium) VALUES (%s, %s, %s)",
                     (name, country or None, stadium or None)
                 )
-                return redirect(url_for("manage"))
+                return redirect(url_for("index") + "#manage")
             except Exception as e:
                 logging.error(f"Error creating club: {str(e)}", exc_info=True)
                 error = f"Fehler: {str(e)}"
@@ -212,7 +213,7 @@ def new_player():
                     "INSERT INTO players (name, position, club_id) VALUES (%s, %s, %s)",
                     (name, position or None, club_id)
                 )
-                return redirect(url_for("manage"))
+                return redirect(url_for("index") + "#manage")
             except Exception as e:
                 logging.error(f"Error creating player: {str(e)}", exc_info=True)
                 error = f"Fehler: {str(e)}"
@@ -239,7 +240,7 @@ def new_trainer():
                     "INSERT INTO trainers (name, club_id) VALUES (%s, %s)",
                     (name, club_id)
                 )
-                return redirect(url_for("manage"))
+                return redirect(url_for("index") + "#manage")
             except Exception as e:
                 logging.error(f"Error creating trainer: {str(e)}", exc_info=True)
                 error = f"Fehler: {str(e)}"
@@ -267,7 +268,7 @@ def new_title():
                     "INSERT INTO titles (title, year, club_id) VALUES (%s, %s, %s)",
                     (title, year, club_id)
                 )
-                return redirect(url_for("manage"))
+                return redirect(url_for("index") + "#manage")
             except Exception as e:
                 logging.error(f"Error creating title: {str(e)}", exc_info=True)
                 error = f"Fehler: {str(e)}"

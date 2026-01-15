@@ -1,62 +1,92 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h3>{{ club.name }}</h3>
-
-{% if club.country or club.stadium %}
-<p style="color: #666; margin-bottom: 20px;">
-  {% if club.country %}<strong>Land:</strong> {{ club.country }} |{% endif %}
-  {% if club.stadium %}<strong>Stadion:</strong> {{ club.stadium }}{% endif %}
-</p>
-{% endif %}
-
-<div class="panel panel-default">
-  <div class="panel-heading">
-    <strong>Spieler ({{ players|length }})</strong>
+<div class="container" style="max-width: 1000px; margin-top: 30px;">
+  <div class="page-header" style="margin-bottom: 30px; border-bottom: 2px solid #007bff; padding-bottom: 20px;">
+    <h1 style="font-size: 36px; margin-bottom: 10px;">⚽ {{ club.name }}</h1>
+    <p class="text-muted" style="font-size: 16px;">
+      {% if club.country %}<span>📍 {{ club.country }}</span>{% endif %}
+      {% if club.stadium %}<span style="margin-left: 15px;">🏟️ {{ club.stadium }}</span>{% endif %}
+      {% if club.competition_name %}<span style="margin-left: 15px;">🏆 {{ club.competition_name }}</span>{% endif %}
+    </p>
   </div>
-  <ul class="list-group">
-    {% if players %}
-      {% for p in players %}
-      <li class="list-group-item">
-        <strong>{{ p.name }}</strong>
-        {% if p.position %}<span class="badge">{{ p.position }}</span>{% endif %}
-      </li>
+
+  <div class="panel panel-default" style="margin-bottom: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div class="panel-heading" style="background-color: #007bff; color: white; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 8px 8px 0 0;">
+      👤 Players ({{ players|length }})
+    </div>
+    <ul class="list-group">
+      {% if players %}
+        {% for p in players %}
+          <li class="list-group-item" style="padding: 12px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <strong style="font-size: 16px;">{{ p.name }}</strong>
+              {% if p.position %}
+                <span class="badge" style="background-color: #28a745; margin-left: 10px;">{{ p.position }}</span>
+              {% endif %}
+            </div>
+          </li>
+        {% endfor %}
+      {% else %}
+        <li class="list-group-item" style="padding: 20px; text-align: center; color: #999;">
+          No players listed.
+        </li>
+      {% endif %}
+    </ul>
+  </div>
+
+  {% if trainers %}
+  <div class="panel panel-default" style="margin-bottom: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div class="panel-heading" style="background-color: #6c757d; color: white; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 8px 8px 0 0;">
+      🏆 Trainers ({{ trainers|length }})
+    </div>
+    <ul class="list-group">
+      {% for t in trainers %}
+        <li class="list-group-item" style="padding: 12px 15px; border-bottom: 1px solid #eee;">
+          <strong style="font-size: 16px;">{{ t.name }}</strong>
+        </li>
       {% endfor %}
-    {% else %}
-    <li class="list-group-item" style="text-align: center; color: #999;">Keine Spieler</li>
-    {% endif %}
-  </ul>
-</div>
-
-{% if trainers %}
-<div class="panel panel-default" style="margin-top: 20px;">
-  <div class="panel-heading">
-    <strong>Trainer ({{ trainers|length }})</strong>
+    </ul>
   </div>
-  <ul class="list-group">
-    {% for t in trainers %}
-    <li class="list-group-item">{{ t.name }}</li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
+  {% endif %}
 
-{% if titles %}
-<div class="panel panel-default" style="margin-top: 20px;">
-  <div class="panel-heading">
-    <strong>Titel ({{ titles|length }})</strong>
+  {% if titles %}
+  <div class="panel panel-default" style="margin-bottom: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <div class="panel-heading" style="background-color: #ffc107; color: black; padding: 15px; font-size: 18px; font-weight: bold; border-radius: 8px 8px 0 0;">
+      🏅 Titles ({{ titles|length }})
+    </div>
+    <ul class="list-group">
+      {% for ti in titles %}
+        <li class="list-group-item" style="padding: 12px 15px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between;">
+          <strong>{{ ti.title }}</strong>
+          <span class="badge" style="background-color: #ffc107; color: black;">{{ ti.year }}</span>
+        </li>
+      {% endfor %}
+    </ul>
   </div>
-  <ul class="list-group">
-    {% for ti in titles %}
-    <li class="list-group-item">
-      <strong>{{ ti.title }}</strong> <span class="badge">{{ ti.year }}</span>
-    </li>
-    {% endfor %}
-  </ul>
-</div>
-{% endif %}
+  {% endif %}
 
-<div style="margin-top: 20px;">
-  <a href="{{ url_for('index') }}" class="btn btn-default">Zurück</a>
+  <div style="margin-top: 30px; text-align: center;">
+    <a class="btn btn-default" href="{{ url_for('index') }}" style="padding: 10px 20px; font-size: 16px;">
+      ← Back to Search
+    </a>
+  </div>
 </div>
+
+<style>
+  .badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+  }
+  
+  .list-group-item:last-child {
+    border-bottom: none;
+  }
+  
+  .list-group-item:hover {
+    background-color: #f8f9fa;
+  }
+</style>
 {% endblock %}

@@ -1,140 +1,11 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="page-header">
-  <h1>Premier League</h1>
-  <p>Verwalte Clubs, Spieler, Trainer und Titel</p>
-</div>
-
-<ul class="nav nav-tabs" role="tablist">
-  <li class="active"><a href="#search-tab" role="tab" data-toggle="tab">Suche</a></li>
-  <li><a href="#manage-tab" role="tab" data-toggle="tab">Verwaltung</a></li>
-</ul>
-
-<div class="tab-content">
-  <!-- SEARCH TAB -->
-  <div role="tabpanel" class="tab-pane active" id="search-tab">
-    <div class="panel panel-default">
-      <div class="panel-body">
-        <form method="get" action="{{ url_for('index') }}" style="margin-bottom: 20px;">
-          <div class="form-group">
-            <label for="search-input"><strong>Suchen:</strong></label>
-            <input id="search-input" name="q" value="{{ query }}" class="form-control" placeholder="z.B. Manchester City, Haaland...">
-          </div>
-          
-          <div class="form-group">
-            <label for="search-type"><strong>Typ:</strong></label>
-            <select id="search-type" name="t" class="form-control">
-              <option value="club" {% if type == 'club' %}selected{% endif %}>Clubs</option>
-              <option value="player" {% if type == 'player' %}selected{% endif %}>Spieler</option>
-              <option value="trainer" {% if type == 'trainer' %}selected{% endif %}>Trainer</option>
-              <option value="title" {% if type == 'title' %}selected{% endif %}>Titel</option>
-            </select>
-          </div>
-          
-          <button class="btn btn-primary">Suchen</button>
-        </form>
-
-        {% if query %}
-        <div>
-          <h4>Ergebnisse für "<strong>{{ query }}</strong>"</h4>
-          <ul class="list-group">
-            {% if results %}
-              {% for r in results %}
-                <li class="list-group-item">
-                  {% if type == 'player' %}
-                    <strong>{{ r.name }}</strong>
-                    {% if r.position %}<span class="badge">{{ r.position }}</span>{% endif %}
-                    {% if r.club %}<br><small>Club: <a href="{{ url_for('club', club_id=r.club_id) }}">{{ r.club }}</a></small>{% endif %}
-                  {% elif type == 'trainer' %}
-                    <strong>{{ r.name }}</strong>
-                    {% if r.club %}<br><small>Club: <a href="{{ url_for('club', club_id=r.club_id) }}">{{ r.club }}</a></small>{% endif %}
-                  {% elif type == 'title' %}
-                    <strong>{{ r.title }}</strong> ({{ r.year }})
-                    {% if r.club %}<br><small>Club: <a href="{{ url_for('club', club_id=r.club_id) }}">{{ r.club }}</a></small>{% endif %}
-                  {% else %}
-                    <strong><a href="{{ url_for('club', club_id=r.id) }}">{{ r.name }}</a></strong>
-                    {% if r.country %}<span class="badge">{{ r.country }}</span>{% endif %}
-                    {% if r.stadium %}<br><small>{{ r.stadium }}</small>{% endif %}
-                  {% endif %}
-                </li>
-              {% endfor %}
-            {% else %}
-              <li class="list-group-item" style="text-align: center; color: #999;">
-                Keine Ergebnisse gefunden
-              </li>
-            {% endif %}
-          </ul>
-        </div>
-        {% endif %}
-      </div>
-    </div>
+<div class="container" style="max-width: 900px; margin-top: 30px;">
+  <div class="page-header" style="margin-bottom: 40px;">
+    <h1 style="font-size: 36px; margin-bottom: 10px;">🔍 Premier League Search</h1>
+    <p class="text-muted" style="font-size: 16px;">Search for clubs and players from the Premier League</p>
   </div>
-
-  <!-- MANAGE TAB -->
-  <div role="tabpanel" class="tab-pane" id="manage-tab">
-    <div class="panel panel-default">
-      <div class="panel-heading">
-        <strong>Clubs</strong> ({{ clubs|length }})
-      </div>
-      <div class="panel-body">
-        <a href="{{ url_for('new_club') }}" class="btn btn-success btn-sm">+ Neuer Club</a>
-        <br><br>
-        {% if clubs %}
-        <ul class="list-group">
-          {% for club in clubs %}
-          <li class="list-group-item">
-            <a href="{{ url_for('club', club_id=club.id) }}"><strong>{{ club.name }}</strong></a>
-            {% if club.country %}<span class="badge">{{ club.country }}</span>{% endif %}
-            {% if club.stadium %}<br><small>{{ club.stadium }}</small>{% endif %}
-          </li>
-          {% endfor %}
-        </ul>
-        {% else %}
-        <p style="color: #999;">Noch keine Clubs vorhanden</p>
-        {% endif %}
-      </div>
-    </div>
-
-    <div class="panel panel-default" style="margin-top: 20px;">
-      <div class="panel-heading">
-        <strong>Spieler hinzufügen</strong>
-      </div>
-      <div class="panel-body">
-        <a href="{{ url_for('new_player') }}" class="btn btn-success btn-sm">+ Neuer Spieler</a>
-      </div>
-    </div>
-
-    <div class="panel panel-default" style="margin-top: 20px;">
-      <div class="panel-heading">
-        <strong>Trainer hinzufügen</strong>
-      </div>
-      <div class="panel-body">
-        <a href="{{ url_for('new_trainer') }}" class="btn btn-success btn-sm">+ Neuer Trainer</a>
-      </div>
-    </div>
-
-    <div class="panel panel-default" style="margin-top: 20px;">
-      <div class="panel-heading">
-        <strong>Titel hinzufügen</strong>
-      </div>
-      <div class="panel-body">
-        <a href="{{ url_for('new_title') }}" class="btn btn-success btn-sm">+ Neuer Titel</a>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-$(function() {
-  // Auto-open manage tab if just created something
-  var hash = window.location.hash;
-  if (hash === '#manage') {
-    $('#manage-tab').tab('show');
-  }
-});
-</script>
-{% endblock %}
 
   <div class="panel panel-default" style="padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
     <form method="get" action="{{ url_for('index') }}">
@@ -148,8 +19,6 @@ $(function() {
         <select id="search-type" name="t" class="form-control" style="padding: 12px; font-size: 16px;">
           <option value="club" {% if type == 'club' %}selected{% endif %}>⚽ Clubs</option>
           <option value="player" {% if type == 'player' %}selected{% endif %}>👤 Players</option>
-          <option value="trainer" {% if type == 'trainer' %}selected{% endif %}>🏆 Trainers</option>
-          <option value="title" {% if type == 'title' %}selected{% endif %}>🏅 Titles</option>
         </select>
       </div>
       
@@ -185,38 +54,6 @@ $(function() {
                   </a>
                 {% endif %}
               </div>
-            {% elif type == 'trainer' %}
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <h5 style="margin: 0 0 5px 0; font-size: 18px;">
-                    <strong>{{ r.name }}</strong>
-                  </h5>
-                  <p style="margin: 0; color: #666; font-size: 14px;">
-                    Trainer
-                  </p>
-                </div>
-                {% if r.club %}
-                  <a href="{{ url_for('club', club_id=r.club_id) }}" class="btn btn-sm btn-info">
-                    {{ r.club }} →
-                  </a>
-                {% endif %}
-              </div>
-            {% elif type == 'title' %}
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                  <h5 style="margin: 0 0 5px 0; font-size: 18px;">
-                    <strong>{{ r.title }}</strong>
-                  </h5>
-                  <p style="margin: 0; color: #666; font-size: 14px;">
-                    Jahr: <strong>{{ r.year }}</strong>
-                  </p>
-                </div>
-                {% if r.club %}
-                  <a href="{{ url_for('club', club_id=r.club_id) }}" class="btn btn-sm btn-info">
-                    {{ r.club }} →
-                  </a>
-                {% endif %}
-              </div>
             {% else %}
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div style="flex: 1;">
@@ -240,7 +77,7 @@ $(function() {
       {% else %}
         <li class="list-group-item" style="text-align: center; padding: 40px; color: #999;">
           <h4>No results found</h4>
-          <p>Try searching for a different team, player or trainer</p>
+          <p>Try searching for a different team or player</p>
         </li>
       {% endif %}
     </ul>

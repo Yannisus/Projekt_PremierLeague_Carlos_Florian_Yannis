@@ -321,7 +321,11 @@ def add_trainer():
         db_write("UPDATE clubs SET trainer=%s WHERE id=%s", (coach_name, club_id))
         # Trainer anlegen
         db_write("INSERT INTO coaches (coach_name, coach_firstname) VALUES (%s, %s)", (coach_name, coach_firstname))
-        coach_id = db_read("SELECT id FROM coaches WHERE coach_name=%s AND coach_firstname=%s ORDER BY id DESC LIMIT 1", (coach_name, coach_firstname))[0][0]
+        coach_result = db_read("SELECT id FROM coaches WHERE coach_name=%s AND coach_firstname=%s ORDER BY id DESC LIMIT 1", (coach_name, coach_firstname))
+        if coach_result and len(coach_result) > 0:
+            coach_id = coach_result[0][0] if isinstance(coach_result[0], (list, tuple)) else coach_result[0].get("id")
+        else:
+            coach_id = None
         db_write("INSERT INTO coaches_per_club (coach_id, club_id, start_year, end_year) VALUES (%s, %s, %s, %s)", (coach_id, club_id, start_year, end_year))
         flash("Trainer erfolgreich hinzugefügt.")
         # Nach dem Hinzufügen zur Suche weiterleiten und Notify anzeigen

@@ -10,52 +10,58 @@ DB_CONFIG = {
     "database": os.getenv("DB_DATABASE")
 }
 
-# If DB_HOST is set, use MySQL, otherwise use SQLite for local development
+# Try to use MySQL if DB_HOST is set; on failure fall back to SQLite
+USE_SQLITE = True
 if DB_CONFIG.get("host"):
-    from mysql.connector import pooling
+    try:
+        from mysql.connector import pooling
 
-    pool = pooling.MySQLConnectionPool(pool_name="pool", pool_size=5, **DB_CONFIG)
+        pool = pooling.MySQLConnectionPool(pool_name="pool", pool_size=5, **DB_CONFIG)
 
-    def get_conn():
-        return pool.get_connection()
+        def get_conn():
+            return pool.get_connection()
 
-    def db_read(sql, params=None, single=False):
-        conn = get_conn()
-        try:
-            cur = conn.cursor(dictionary=True)
-            cur.execute(sql, params or ())
-
-            if single:
-                row = cur.fetchone()
-                print("db_read(single=True) ->", row)   # DEBUG
-                return row
-            else:
-                rows = cur.fetchall()
-                print("db_read(single=False) ->", rows)  # DEBUG
-                return rows
-
-        finally:
+        def db_read(sql, params=None, single=False):
+            conn = get_conn()
             try:
-                cur.close()
-            except:
-                pass
-            conn.close()
+                cur = conn.cursor(dictionary=True)
+                cur.execute(sql, params or ())
 
-    def db_write(sql, params=None):
-        conn = get_conn()
-        try:
-            cur = conn.cursor()
-            cur.execute(sql, params or ())
-            conn.commit()
-            print("db_write OK:", sql, params)  # DEBUG
-        finally:
+                if single:
+                    row = cur.fetchone()
+                    print("db_read(single=True) ->", row)   # DEBUG
+                    return row
+                else:
+                    rows = cur.fetchall()
+                    print("db_read(single=False) ->", rows)  # DEBUG
+                    return rows
+
+            finally:
+                try:
+                    cur.close()
+                except:
+                    pass
+                conn.close()
+
+        def db_write(sql, params=None):
+            conn = get_conn()
             try:
-                cur.close()
-            except:
-                pass
-            conn.close()
+                cur = conn.cursor()
+                cur.execute(sql, params or ())
+                conn.commit()
+                print("db_write OK:", sql, params)  # DEBUG
+            finally:
+                try:
+                    cur.close()
+                except:
+                    pass
+                conn.close()
 
-else:
+        USE_SQLITE = False
+    except Exception as e:
+        print("MySQL setup failed, falling back to SQLite:", e)
+
+if USE_SQLITE:
     import sqlite3
 
     DB_FILE = os.path.join(os.path.dirname(__file__), "db.sqlite3")

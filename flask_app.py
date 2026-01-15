@@ -5,6 +5,7 @@ import git
 import hmac
 import hashlib
 from db import db_read, db_write
+import re
 from auth import login_manager, authenticate, register_user
 from flask_login import login_user, logout_user, login_required, current_user
 import logging
@@ -313,7 +314,24 @@ def add_trainer():
                 resp = requests.get(url, headers=API_HEADERS, timeout=10)
                 resp.raise_for_status()
                 teams = resp.json().get("teams", [])
-                team = next((t for t in teams if t.get("name", "").lower() == club_name.lower()), None)
+                # improved matching: normalize names (remove non-alnum) and allow partial matches
+                def _norm(s):
+                    return re.sub(r'[^a-z0-9]', '', (s or '').lower())
+
+                query_norm = _norm(club_name)
+                team = None
+                # exact normalized match first
+                for t in teams:
+                    if query_norm and query_norm == _norm(t.get('name')):
+                        team = t
+                        break
+                # then try substring matches
+                if not team:
+                    for t in teams:
+                        tn = _norm(t.get('name'))
+                        if query_norm and (query_norm in tn or tn in query_norm):
+                            team = t
+                            break
                 if team:
                     team_id = team.get("id")
                     # Ensure we store the API club id so coaches_per_club references match the API-based club pages

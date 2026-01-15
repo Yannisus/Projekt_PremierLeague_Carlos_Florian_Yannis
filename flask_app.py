@@ -158,11 +158,11 @@ def search_players_api(query):
             try:
                 team_id = team.get("id")
                 team_name = team.get("name")
-                # Fetch squad details - in v4 the squad is included in the team response
+                # Squad is included in the team response in v4
                 squad = team.get("squad", [])
                 
                 for member in squad:
-                    if query.lower() in member.get("name", "").lower() and member.get("position") and member.get("position") != "Coach":
+                    if query.lower() in member.get("name", "").lower():
                         results.append({
                             "id": member.get("id"),
                             "name": member.get("name"),
@@ -171,7 +171,7 @@ def search_players_api(query):
                             "club": team_name
                         })
             except Exception as e:
-                logging.warning(f"Error fetching team {team_id}: {str(e)}")
+                logging.warning(f"Error processing team {team_id}: {str(e)}")
                 continue
         
         logging.info(f"Found {len(results)} players for query: {query}")
@@ -181,39 +181,11 @@ def search_players_api(query):
         return []
 
 def search_trainers_api(query):
-    """Search trainers from API v4"""
-    try:
-        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-        logging.info(f"Fetching teams from: {url}")
-        resp = requests.get(url, headers=API_HEADERS, timeout=10)
-        resp.raise_for_status()
-        teams = resp.json().get("teams", [])
-        results = []
-        
-        for team in teams:
-            try:
-                team_id = team.get("id")
-                team_name = team.get("name")
-                # Fetch squad details - in v4 the squad is included in the team response
-                squad = team.get("squad", [])
-                
-                for member in squad:
-                    if query.lower() in member.get("name", "").lower() and member.get("position") == "Coach":
-                        results.append({
-                            "id": member.get("id"),
-                            "name": member.get("name"),
-                            "club_id": team_id,
-                            "club": team_name
-                        })
-            except Exception as e:
-                logging.warning(f"Error fetching team {team_id}: {str(e)}")
-                continue
-        
-        logging.info(f"Found {len(results)} trainers for query: {query}")
-        return results
-    except Exception as e:
-        logging.error(f"API search error: {str(e)}", exc_info=True)
-        return []
+    """Search trainers from API v4 - v4 free tier doesn't easily provide coach data"""
+    # In v4, coaches/trainers are not included in the free tier squad data
+    # Return empty list
+    logging.info("Trainer search not available in v4 free tier")
+    return []
 
 @app.route("/", methods=["GET"])
 @login_required
@@ -260,25 +232,21 @@ def club(club_id):
             "competition_name": "Premier League"
         }
         
-        # Extract players and trainers from squad
+        # Extract players from squad (v4 API only includes players)
         squad = club_data.get("squad", [])
         players = []
-        trainers = []
         
         for member in squad:
-            if member.get("position") == "Coach":
-                trainers.append({
-                    "id": member.get("id"),
-                    "name": member.get("name")
-                })
-            else:
+            if member.get("position"):  # All squad members have a position
                 players.append({
                     "id": member.get("id"),
                     "name": member.get("name"),
                     "position": member.get("position")
                 })
         
-        titles = []  # API v4 doesn't have titles easily accessible
+        # Trainers and titles are not easily available in v4 free tier
+        trainers = []
+        titles = []
         
         return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
     

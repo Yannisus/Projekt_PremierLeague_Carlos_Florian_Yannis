@@ -235,14 +235,56 @@ def index():
 @app.route('/club/<int:club_id>')
 @login_required
 def club(club_id):
-    # only show clubs in Premier League
-    club = db_read("SELECT id, name, country, stadium, competition_name FROM clubs WHERE id = %s AND competition_id = %s", (club_id, 2021), single=True)
-    if not club:
+    # Fetch club details from API
+    try:
+        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+        resp = requests.get(url, headers=API_HEADERS, timeout=10)
+        resp.raise_for_status()
+        teams = resp.json().get("teams", [])
+        
+        club_data = None
+        for team in teams:
+            if team.get("id") == club_id:
+                club_data = team
+                break
+        
+        if not club_data:
+            return redirect(url_for('index'))
+        
+        # Extract club info
+        club = {
+            "id": club_data.get("id"),
+            "name": club_data.get("name"),
+            "country": club_data.get("area", {}).get("name"),
+            "stadium": club_data.get("venue"),
+            "competition_name": "Premier League"
+        }
+        
+        # Extract players and trainers from squad
+        squad = club_data.get("squad", [])
+        players = []
+        trainers = []
+        
+        for member in squad:
+            if member.get("position") == "Coach":
+                trainers.append({
+                    "id": member.get("id"),
+                    "name": member.get("name")
+                })
+            else:
+                players.append({
+                    "id": member.get("id"),
+                    "name": member.get("name"),
+                    "position": member.get("position")
+                })
+        
+        titles = []  # API v4 doesn't have titles easily accessible
+        
+        return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
+    
+    except Exception as e:
+        logging.error(f"Error fetching club {club_id}: {str(e)}", exc_info=True)
         return redirect(url_for('index'))
-    players = db_read("SELECT id, name, position FROM players WHERE club_id = %s", (club_id,))
-    trainers = db_read("SELECT id, name FROM trainers WHERE club_id = %s", (club_id,))
-    titles = db_read("SELECT id, title, year FROM titles WHERE club_id = %s ORDER BY year DESC", (club_id,))
-    return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
 
 @app.route("/users", methods=["GET"])
 @login_required

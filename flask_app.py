@@ -8,6 +8,7 @@ from db import db_read, db_write
 from auth import login_manager, authenticate, register_user
 from flask_login import login_user, logout_user, login_required, current_user
 import logging
+import requests
 
 logging.basicConfig(
     level=logging.DEBUG,
@@ -17,6 +18,10 @@ logging.basicConfig(
 # Load .env variables
 load_dotenv()
 W_SECRET = os.getenv("W_SECRET")
+API_KEY = os.getenv("FOOTBALL_API_KEY")
+API_BASE = os.getenv("FOOTBALL_API_BASE", "https://api.football-data.org/v2")
+API_HEADERS = {"X-Auth-Token": API_KEY} if API_KEY else {}
+COMPETITION_ID = 2021
 
 # Init flask app
 app = Flask(__name__)
@@ -112,6 +117,87 @@ def logout():
 
 
 # App routes
+def search_clubs_api(query):
+    """Search clubs from API"""
+    try:
+        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+        resp = requests.get(url, headers=API_HEADERS)
+        resp.raise_for_status()
+        teams = resp.json().get("teams", [])
+        results = []
+        for team in teams:
+            if query.lower() in team.get("name", "").lower():
+                results.append({
+                    "id": team.get("id"),
+                    "name": team.get("name"),
+                    "country": team.get("area", {}).get("name"),
+                    "stadium": team.get("venue"),
+                    "competition_name": "Premier League"
+                })
+        return results
+    except Exception as e:
+        logging.error(f"API search error: {e}")
+        return []
+
+def search_players_api(query):
+    """Search players from API"""
+    try:
+        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+        resp = requests.get(url, headers=API_HEADERS)
+        resp.raise_for_status()
+        teams = resp.json().get("teams", [])
+        results = []
+        for team in teams:
+            team_id = team.get("id")
+            team_name = team.get("name")
+            # Fetch squad details
+            squad_url = f"{API_BASE}/teams/{team_id}"
+            squad_resp = requests.get(squad_url, headers=API_HEADERS)
+            squad_resp.raise_for_status()
+            squad = squad_resp.json().get("squad", [])
+            for member in squad:
+                if query.lower() in member.get("name", "").lower() and member.get("role") == "PLAYER":
+                    results.append({
+                        "id": member.get("id"),
+                        "name": member.get("name"),
+                        "position": member.get("position"),
+                        "club_id": team_id,
+                        "club": team_name
+                    })
+        return results
+    except Exception as e:
+        logging.error(f"API search error: {e}")
+        return []
+
+def search_trainers_api(query):
+    """Search trainers from API"""
+    try:
+        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+        resp = requests.get(url, headers=API_HEADERS)
+        resp.raise_for_status()
+        teams = resp.json().get("teams", [])
+        results = []
+        for team in teams:
+            team_id = team.get("id")
+            team_name = team.get("name")
+            # Fetch squad details
+            squad_url = f"{API_BASE}/teams/{team_id}"
+            squad_resp = requests.get(squad_url, headers=API_HEADERS)
+            squad_resp.raise_for_status()
+            squad = squad_resp.json().get("squad", [])
+            for member in squad:
+                if query.lower() in member.get("name", "").lower() and member.get("role") != "PLAYER":
+                    results.append({
+                        "id": member.get("id"),
+                        "name": member.get("name"),
+                        "club_id": team_id,
+                        "club": team_name
+                    })
+        return results
+    except Exception as e:
+        logging.error(f"API search error: {e}")
+        return []
+
 @app.route("/", methods=["GET"])
 @login_required
 def index():
@@ -121,13 +207,11 @@ def index():
     results = []
     if q:
         if t == "player":
-            results = db_read("SELECT players.id, players.name, players.position, players.club_id, clubs.name AS club FROM players LEFT JOIN clubs ON players.club_id = clubs.id WHERE players.name LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
+            results = search_players_api(q)
         elif t == "trainer":
-            results = db_read("SELECT trainers.id, trainers.name, trainers.club_id, clubs.name AS club FROM trainers LEFT JOIN clubs ON trainers.club_id = clubs.id WHERE trainers.name LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
-        elif t == "title":
-            results = db_read("SELECT titles.id, titles.title, titles.year, titles.club_id, clubs.name AS club FROM titles LEFT JOIN clubs ON titles.club_id = clubs.id WHERE titles.title LIKE %s AND clubs.competition_id = %s", (f"%{q}%", 2021))
+            results = search_trainers_api(q)
         else:
-            results = db_read("SELECT id, name, country, stadium, competition_name FROM clubs WHERE name LIKE %s AND competition_id = %s", (f"%{q}%", 2021))
+            results = search_clubs_api(q)
     return render_template("main_page.html", results=results, query=q, type=t)
 
 

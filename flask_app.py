@@ -182,11 +182,34 @@ def search_players_api(query):
         return []
 
 def search_trainers_api(query):
-    """Search trainers from API v4 - v4 free tier doesn't easily provide coach data"""
-    # In v4, coaches/trainers are not included in the free tier squad data
-    # Return empty list
-    logging.info("Trainer search not available in v4 free tier")
-    return []
+    """Search trainers in local DB and fallback to API where possible."""
+    try:
+        # search coaches table by name or firstname
+        q = f"%{query}%"
+        rows = db_read("SELECT c.id, c.coach_name, c.coach_firstname, cp.club_id FROM coaches c LEFT JOIN coaches_per_club cp ON c.id = cp.coach_id WHERE c.coach_name LIKE %s OR c.coach_firstname LIKE %s", (q, q))
+        results = []
+        for r in rows:
+            coach_id = r.get('id') if isinstance(r, dict) else (r[0] if isinstance(r, (list,tuple)) else None)
+            coach_name = r.get('coach_name') if isinstance(r, dict) else (r[1] if isinstance(r, (list,tuple)) else None)
+            coach_first = r.get('coach_firstname') if isinstance(r, dict) else (r[2] if isinstance(r, (list,tuple)) else None)
+            club_id = r.get('club_id') if isinstance(r, dict) else (r[3] if isinstance(r, (list,tuple)) else None)
+            club_name = None
+            if club_id:
+                # try to fetch club name
+                club_row = db_read("SELECT club_name, name FROM clubs WHERE id=%s", (club_id,), single=True)
+                if club_row:
+                    club_name = club_row.get('club_name') or club_row.get('name')
+            results.append({
+                'id': coach_id,
+                'name': f"{coach_first or ''} {coach_name or ''}".strip(),
+                'club_id': club_id,
+                'club': club_name
+            })
+        logging.info(f"Found {len(results)} trainers for query: {query}")
+        return results
+    except Exception as e:
+        logging.error("Error searching trainers: %s", e, exc_info=True)
+        return []
 
 @app.route("/", methods=["GET"])
 @login_required
@@ -196,12 +219,17 @@ def index():
     t = request.args.get("t", "club")
     results = []
     if q:
-        if t == "player":
-            results = search_players_api(q)
-        elif t == "trainer":
-            results = search_trainers_api(q)
-        else:
-            results = search_clubs_api(q)
+        try:
+            if t == "player":
+                results = search_players_api(q)
+            elif t == "trainer":
+                results = search_trainers_api(q)
+            else:
+                results = search_clubs_api(q)
+        except Exception as e:
+            logging.error("Search error: %s", e, exc_info=True)
+            results = []
+    logging.debug("Search q=%s t=%s -> %d results", q, t, len(results) if results else 0)
     return render_template("main_page.html", results=results, query=q, type=t)
 
 

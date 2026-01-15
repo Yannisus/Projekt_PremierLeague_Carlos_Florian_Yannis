@@ -200,22 +200,7 @@ def index():
         elif t == "trainer":
             results = search_trainers_api(q)
         else:
-            # Suche zuerst in der API
             results = search_clubs_api(q)
-            # Ergänze lokale Clubs, die nicht in der API sind
-            local_clubs = db_read("SELECT id, club_name, country, stadium, competition_name, title FROM clubs WHERE club_name LIKE %s OR title LIKE %s", (f"%{q}%", f"%{q}%"))
-            api_ids = {r["id"] for r in results}
-            for lc in local_clubs:
-                cid = lc.get("id")
-                if cid not in api_ids:
-                    results.append({
-                        "id": cid,
-                        "name": lc.get("club_name"),
-                        "country": lc.get("country"),
-                        "stadium": lc.get("stadium"),
-                        "competition_name": lc.get("competition_name"),
-                        "title": lc.get("title")
-                    })
     return render_template("main_page.html", results=results, query=q, type=t)
 
 
@@ -362,10 +347,8 @@ def add_title():
         year_ = request.form["year_"]
         # Club anlegen, falls nicht vorhanden (API holen, falls nötig)
         club = db_read("SELECT id FROM clubs WHERE club_name=%s", (club_name,))
-        if club and len(club) > 0:
-            club_id = club[0][0] if isinstance(club[0], (list, tuple)) else club[0].get("id")
-        else:
-            club_id = None
+        if club:
+            club_id = club[0][0]
         else:
             try:
                 from scripts.fetch_api import fetch_teams, upsert_club

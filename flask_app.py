@@ -254,8 +254,20 @@ def club(club_id):
             squad = club_data.get("squad", [])
             for member in squad:
                 if member.get("position"):
+                    # Spieler in DB speichern, falls noch nicht vorhanden
+                    player_id = None
+                    player_result = db_read("SELECT id FROM players WHERE player_name=%s AND player_firstname=%s", (member.get("name"), member.get("name")))
+                    if player_result and len(player_result) > 0:
+                        player_id = player_result[0]["id"] if isinstance(player_result[0], dict) else player_result[0][0]
+                    else:
+                        db_write("INSERT INTO players (player_name, player_firstname, player_identifier) VALUES (%s, %s, %s)", (member.get("name"), member.get("name"), str(member.get("id"))))
+                        player_id = db_read("SELECT id FROM players WHERE player_name=%s AND player_firstname=%s ORDER BY id DESC LIMIT 1", (member.get("name"), member.get("name")))[0]["id"]
+                    # Spieler-Club-Zuordnung speichern
+                    exists = db_read("SELECT id FROM players_by_club WHERE club_id=%s AND player_id=%s", (club_id, player_id))
+                    if not exists:
+                        db_write("INSERT INTO players_by_club (club_id, player_id) VALUES (%s, %s)", (club_id, player_id))
                     players.append({
-                        "id": member.get("id"),
+                        "id": player_id,
                         "name": member.get("name"),
                         "position": member.get("position")
                     })

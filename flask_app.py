@@ -210,83 +210,50 @@ def index():
 @login_required
 def club(club_id):
     try:
-        # Zuerst versuchen, Clubdaten aus der lokalen DB zu lesen
+        # Clubdaten IMMER von der API holen
+        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+        resp = requests.get(url, headers=API_HEADERS, timeout=10)
+        resp.raise_for_status()
+        teams = resp.json().get("teams", [])
+        club_data = next((team for team in teams if team.get("id") == club_id), None)
+        if not club_data:
+            return render_template('club.html', club=None, players=[], trainers=[], titles=[], notfound=True)
+        club = {
+            "id": club_data.get("id"),
+            "name": club_data.get("name"),
+            "country": club_data.get("area", {}).get("name"),
+            "stadium": club_data.get("venue"),
+            "competition_name": "Premier League",
+        }
+        # Spieler aus API
+        players = []
+        squad = club_data.get("squad", [])
+        for member in squad:
+            if member.get("position"):
+                players.append({
+                    "id": member.get("id"),
+                    "name": member.get("name"),
+                    "position": member.get("position")
+                })
+        # Trainer und Titel aus DB holen
         club_row = db_read("SELECT * FROM clubs WHERE id=%s", (club_id,), single=True)
-        if club_row:
-            club = {
-                "id": club_row.get("id"),
-                "name": club_row.get("name") or club_row.get("club_name"),
-                "country": club_row.get("country"),
-                "stadium": club_row.get("stadium"),
-                "competition_name": club_row.get("competition_name"),
-                "trainer": club_row.get("trainer"),
-                "title": club_row.get("title")
-            }
-            # Spieler aus players_by_club holen
-            players = db_read("""
-                SELECT p.id, p.player_name as name, NULL as position
-                FROM players_by_club pb
-                JOIN players p ON pb.player_id = p.id
-                WHERE pb.club_id = %s
-            """, (club_id,))
-            # Wenn keine Spieler in DB, versuche temporär aus API zu holen
-            if not players:
-                url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-                resp = requests.get(url, headers=API_HEADERS, timeout=10)
-                resp.raise_for_status()
-                teams = resp.json().get("teams", [])
-                club_data = next((team for team in teams if team.get("id") == club_id), None)
-                if club_data:
-                    squad = club_data.get("squad", [])
-                    for member in squad:
-                        if member.get("position"):
-                            players.append({
-                                "id": member.get("id"),
-                                "name": member.get("name"),
-                                "position": member.get("position")
-                            })
-        else:
-            # Wenn nicht vorhanden, von der API holen und in DB speichern
-            url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
-            resp = requests.get(url, headers=API_HEADERS, timeout=10)
-            resp.raise_for_status()
-            teams = resp.json().get("teams", [])
-            club_data = next((team for team in teams if team.get("id") == club_id), None)
-            if not club_data:
-                return redirect(url_for('index'))
-            # In DB speichern
-            db_write("INSERT INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
-                (club_data.get("id"), club_data.get("name"), club_data.get("area", {}).get("name"), club_data.get("venue"), COMPETITION_ID, "Premier League"))
-            club = {
-                "id": club_data.get("id"),
-                "name": club_data.get("name"),
-                "country": club_data.get("area", {}).get("name"),
-                "stadium": club_data.get("venue"),
-                "competition_name": "Premier League",
-                "trainer": None,
-                "title": None
-            }
-            players = []
-            squad = club_data.get("squad", [])
-            for member in squad:
-                if member.get("position"):
-                    # Spieler in DB speichern, falls noch nicht vorhanden
-                    player_id = None
-                    player_result = db_read("SELECT id FROM players WHERE player_name=%s AND player_firstname=%s", (member.get("name"), member.get("name")))
-                    if player_result and len(player_result) > 0:
-                        player_id = player_result[0]["id"] if isinstance(player_result[0], dict) else player_result[0][0]
-                    else:
-                        db_write("INSERT INTO players (player_name, player_firstname, player_identifier) VALUES (%s, %s, %s)", (member.get("name"), member.get("name"), str(member.get("id"))))
-                        player_id = db_read("SELECT id FROM players WHERE player_name=%s AND player_firstname=%s ORDER BY id DESC LIMIT 1", (member.get("name"), member.get("name")))[0]["id"]
-                    # Spieler-Club-Zuordnung speichern
-                    exists = db_read("SELECT id FROM players_by_club WHERE club_id=%s AND player_id=%s", (club_id, player_id))
-                    if not exists:
-                        db_write("INSERT INTO players_by_club (club_id, player_id) VALUES (%s, %s)", (club_id, player_id))
-                    players.append({
-                        "id": player_id,
-                        "name": member.get("name"),
-                        "position": member.get("position")
-                    })
+        trainers = db_read("""
+            SELECT c.coach_firstname, c.coach_name, cp.start_year, cp.end_year
+            FROM coaches_per_club cp
+            JOIN coaches c ON cp.coach_id = c.id
+            WHERE cp.club_id = %s
+        """, (club_id,))
+        if not trainers and club_row and club_row.get("trainer"):
+            trainers = [{"coach_name": club_row["trainer"]}]
+        titles = db_read("""
+            SELECT t.title_name, tp.year_
+            FROM titles_per_club tp
+            JOIN titles t ON tp.title_id = t.id
+            WHERE tp.club_id = %s
+        """, (club_id,))
+        if not titles and club_row and club_row.get("title"):
+            titles = [{"title_name": club_row["title"]}]
+        return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
         # Trainer und Titel aus DB holen
         trainers = db_read("""
             SELECT c.coach_firstname, c.coach_name, cp.start_year, cp.end_year

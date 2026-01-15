@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 import os
+import logging
 
 # Load .env variables
 load_dotenv()
@@ -29,11 +30,11 @@ if DB_CONFIG.get("host"):
 
                 if single:
                     row = cur.fetchone()
-                    print("db_read(single=True) ->", row)   # DEBUG
+                    logging.debug("db_read(single=True) -> %s", row)
                     return row
                 else:
                     rows = cur.fetchall()
-                    print("db_read(single=False) ->", rows)  # DEBUG
+                    logging.debug("db_read(single=False) -> %s", rows)
                     return rows
 
             finally:
@@ -49,7 +50,7 @@ if DB_CONFIG.get("host"):
                 cur = conn.cursor()
                 cur.execute(sql, params or ())
                 conn.commit()
-                print("db_write OK:", sql, params)  # DEBUG
+                logging.debug("db_write OK: %s %s", sql, params)
             finally:
                 try:
                     cur.close()
@@ -59,7 +60,7 @@ if DB_CONFIG.get("host"):
 
         USE_SQLITE = False
     except Exception as e:
-        print("MySQL setup failed, falling back to SQLite:", e)
+        logging.warning("MySQL setup failed, falling back to SQLite: %s", e)
 
 if USE_SQLITE:
     import sqlite3
@@ -180,12 +181,12 @@ if USE_SQLITE:
 
             if single:
                 row = cur.fetchone()
-                print("db_read(single=True) ->", row)  # DEBUG
+                logging.debug("db_read(single=True) -> %s", row)
                 return dict(row) if row else None
             else:
                 rows = cur.fetchall()
                 rows = [dict(r) for r in rows]
-                print("db_read(single=False) ->", rows)  # DEBUG
+                logging.debug("db_read(single=False) -> %s", rows)
                 return rows
         finally:
             try:
@@ -200,7 +201,7 @@ if USE_SQLITE:
             cur = conn.cursor()
             _exec(cur, sql, params)
             conn.commit()
-            print("db_write OK:", sql, params)  # DEBUG
+            logging.debug("db_write OK: %s %s", sql, params)
         finally:
             try:
                 cur.close()

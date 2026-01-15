@@ -341,10 +341,10 @@ def add_trainer():
                     # Fallback: nur Name eintragen
                     db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
                     club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
-            except Exception as e:
-                print("Fehler beim API-Club-Insert:", e)
-                db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
-                club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
+                except Exception as e:
+                    logging.error("Fehler beim API-Club-Insert: %s", e, exc_info=True)
+                    db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
+                    club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
         # Trainer und Titel direkt in clubs Tabelle speichern
         db_write("UPDATE clubs SET trainer=%s WHERE id=%s", (coach_name, club_id))
         # Trainer anlegen
@@ -393,7 +393,7 @@ def add_title():
                     db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
                     club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
             except Exception as e:
-                print("Fehler beim API-Club-Insert:", e)
+                logging.error("Fehler beim API-Club-Insert: %s", e, exc_info=True)
                 db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
                 club_id = db_read("SELECT id FROM clubs WHERE club_name=%s ORDER BY id DESC LIMIT 1", (club_name,))[0][0]
         # Titel anlegen

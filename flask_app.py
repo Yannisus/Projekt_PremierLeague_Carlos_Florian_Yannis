@@ -266,12 +266,16 @@ def club(club_id):
             JOIN coaches c ON cp.coach_id = c.id
             WHERE cp.club_id = %s
         """, (club_id,))
+        if not trainers and club.get("trainer"):
+            trainers = [{"coach_name": club["trainer"]}]
         titles = db_read("""
             SELECT t.title_name, tp.year_
             FROM titles_per_club tp
             JOIN titles t ON tp.title_id = t.id
             WHERE tp.club_id = %s
         """, (club_id,))
+        if not titles and club.get("title"):
+            titles = [{"title_name": club["title"]}]
         return render_template('club.html', club=club, players=players, trainers=trainers, titles=titles)
     except Exception as e:
         logging.error(f"Error fetching club {club_id}: {str(e)}", exc_info=True)

@@ -15,10 +15,11 @@
     {% endfor %}
   </ul>
 
+
   <h3>Trainers</h3>
   <ul class="list-group">
     {% for t in trainers %}
-      <li class="list-group-item">{{ t.name }}</li>
+      <li class="list-group-item">{{ t.name or t.coach_name }}</li>
     {% else %}
       <li class="list-group-item">No trainers listed.</li>
     {% endfor %}
@@ -27,7 +28,7 @@
   <h3>Titles</h3>
   <ul class="list-group">
     {% for ti in titles %}
-      <li class="list-group-item">{{ ti.title }} — {{ ti.year }}</li>
+      <li class="list-group-item">{{ ti.title or ti.title_name }}{% if ti.year or ti.year_ %} — {{ ti.year or ti.year_ }}{% endif %}</li>
     {% else %}
       <li class="list-group-item">No titles listed.</li>
     {% endfor %}

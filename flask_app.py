@@ -1,3 +1,52 @@
+# Admin-Formular für manuelles Hinzufügen von Titeln und Trainern
+@app.route('/admin/add_manual', methods=["GET", "POST"])
+@login_required
+def add_manual():
+    # Clubs aus API holen
+    try:
+        url = f"{API_BASE}/competitions/{COMPETITION_ID}/teams"
+        resp = requests.get(url, headers=API_HEADERS, timeout=10)
+        resp.raise_for_status()
+        teams = resp.json().get("teams", [])
+        clubs = [{"id": t.get("id"), "name": t.get("name")} for t in teams]
+    except Exception as e:
+        clubs = []
+        flash("Fehler beim Laden der Clubs von der API.", "danger")
+
+    if request.method == "POST":
+        club_id = request.form.get("club_id")
+        if not club_id:
+            flash("Bitte einen Club auswählen!", "danger")
+            return render_template("add_manual.html", clubs=clubs)
+
+        # Titel hinzufügen
+        if request.form.get("title_name") and request.form.get("title_year"):
+            title_name = request.form["title_name"].strip()
+            title_year = request.form["title_year"].strip()
+            if title_name and title_year:
+                db_write("INSERT IGNORE INTO titles (title_name) VALUES (%s)", (title_name,))
+                title_row = db_read("SELECT id FROM titles WHERE title_name = %s", (title_name,), single=True)
+                if title_row:
+                    db_write("INSERT INTO titles_per_club (year_, title_id, club_id) VALUES (%s, %s, %s)", (title_year, title_row["id"], club_id))
+                    flash("Title added!", "success")
+                else:
+                    flash("Could not add title.", "danger")
+
+        # Trainer hinzufügen
+        if request.form.get("trainer_name"):
+            trainer_name = request.form["trainer_name"].strip()
+            if trainer_name:
+                db_write("INSERT IGNORE INTO coaches (coach_name) VALUES (%s)", (trainer_name,))
+                coach_row = db_read("SELECT id FROM coaches WHERE coach_name = %s", (trainer_name,), single=True)
+                if coach_row:
+                    db_write("INSERT INTO coaches_by_club (coach_id, club_id) VALUES (%s, %s)", (coach_row["id"], club_id))
+                    flash("Trainer added!", "success")
+                else:
+                    flash("Could not add trainer.", "danger")
+
+        return redirect(url_for("add_manual"))
+
+    return render_template("add_manual.html", clubs=clubs)
 from flask import Flask, redirect, render_template, request, url_for, flash
 from dotenv import load_dotenv
 import os

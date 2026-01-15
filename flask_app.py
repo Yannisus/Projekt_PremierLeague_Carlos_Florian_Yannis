@@ -306,10 +306,12 @@ def add_trainer():
                 teams = resp.json().get("teams", [])
                 team = next((t for t in teams if t.get("name", "").lower() == club_name.lower()), None)
                 if team:
-                    # Use API club id as primary key
-                    db_write("INSERT INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
-                        (team.get("id"), team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
+                    # Use API club id as primary key, but only insert if not exists
                     club_id = team.get("id")
+                    club_exists = db_read("SELECT id FROM clubs WHERE id=%s", (club_id,))
+                    if not club_exists:
+                        db_write("INSERT INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
+                            (club_id, team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
                 else:
                     # Fallback: nur Name eintragen
                     db_write("INSERT INTO clubs (name) VALUES (%s)", (club_name,))

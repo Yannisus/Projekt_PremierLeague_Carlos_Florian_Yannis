@@ -294,9 +294,17 @@ def add_trainer():
         start_year = request.form.get("start_year")
         end_year = request.form.get("end_year")
         # Club anlegen, falls nicht vorhanden (API holen, falls nötig)
-        club = db_read("SELECT id FROM clubs WHERE club_name=%s", (club_name,))
+        # search both `club_name` and `name` columns (API vs manual inserts)
+        club = db_read("SELECT id FROM clubs WHERE club_name=%s OR name=%s", (club_name, club_name))
         if club and len(club) > 0 and club[0]:
-            club_id = club[0][0] if isinstance(club[0], (list, tuple)) else club[0].get("id")
+            if isinstance(club[0], dict):
+                club_id = club[0].get("id")
+            elif isinstance(club[0], (list, tuple)):
+                club_id = club[0][0]
+            else:
+                club_id = None
+        else:
+            club_id = None
         # Versuche Clubdaten von der API zu holen und einzufügen, falls nicht gefunden
         else:
             try:
@@ -312,6 +320,7 @@ def add_trainer():
                     db_write("INSERT OR IGNORE INTO clubs (id, name, country, stadium, competition_id, competition_name) VALUES (%s, %s, %s, %s, %s, %s)",
                         (team_id, team.get("name"), team.get("area", {}).get("name"), team.get("venue"), COMPETITION_ID, "Premier League"))
                     club_id = team_id
+                logging.debug(f"API club matched: {team.get('name')} -> club_id={club_id}")
                 else:
                     # Fallback: nur Name eintragen
                     db_write("INSERT INTO clubs (club_name) VALUES (%s)", (club_name,))
@@ -325,8 +334,8 @@ def add_trainer():
         # Trainer anlegen
         db_write("INSERT INTO coaches (coach_name, coach_firstname) VALUES (%s, %s)", (coach_name, coach_firstname))
         coach_result = db_read("SELECT id FROM coaches WHERE coach_name=%s AND coach_firstname=%s ORDER BY id DESC LIMIT 1", (coach_name, coach_firstname))
+        logging.debug(f"coach_result after insert: {coach_result}")
         if coach_result and len(coach_result) > 0:
-            # MySQL returns list of dicts, SQLite may return list of tuples
             if isinstance(coach_result[0], dict):
                 coach_id = coach_result[0].get("id")
             elif isinstance(coach_result[0], (list, tuple)):
@@ -334,7 +343,11 @@ def add_trainer():
             else:
                 coach_id = None
         else:
-            coach_id = None
+            # fallback: try last inserted coach id
+            last = db_read("SELECT id FROM coaches ORDER BY id DESC LIMIT 1", (), single=True)
+            logging.debug(f"coach fallback last: {last}")
+            coach_id = last.get("id") if last else None
+        logging.debug(f"Inserting coaches_per_club: coach_id={coach_id}, club_id={club_id}, start={start_year}, end={end_year}")
         db_write("INSERT INTO coaches_per_club (coach_id, club_id, start_year, end_year) VALUES (%s, %s, %s, %s)", (coach_id, club_id, start_year, end_year))
         flash("Trainer erfolgreich hinzugefügt.")
         # Nach dem Hinzufügen zur Suche weiterleiten und Notify anzeigen

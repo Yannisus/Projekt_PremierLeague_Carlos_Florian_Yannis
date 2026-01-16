@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="card">
+            <h2 class="text-center" style="margin-top: 0; color: #b21f1f;"><i class="fas fa-user-plus"></i> Spieler hinzufügen</h2>
+            <hr>
+            <form method="post">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="player_firstname">Vorname</label>
+                            <input type="text" class="form-control" name="player_firstname" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="player_name">Nachname</label>
+                            <input type="text" class="form-control" name="player_name" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="club_id">Club zuweisen</label>
+                    <select name="club_id" class="form-control" required>
+                        <option value="">Bitte wählen...</option>
+                        {% for c in clubs %}
+                            <option value="{{ c.id }}">{{ c.club_name or c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="text-right">
+                    <a href="{{ url_for('index') }}" class="btn btn-default">Abbrechen</a>
+                    <button type="submit" class="btn btn-primary">Spieler speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

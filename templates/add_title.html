@@ -1,13 +1,38 @@
 {% extends "base.html" %}
+
 {% block content %}
-<h2>Titel hinzufügen</h2>
-<form method="post">
-    <label for="title_name">Titelname:</label>
-    <input type="text" name="title_name" required><br>
-    <label for="club_name">Club:</label>
-    <input type="text" name="club_name" required placeholder="Clubname eingeben"><br>
-    <label for="year_">Jahr:</label>
-    <input type="number" name="year_" min="1800" max="2100" required><br>
-    <button type="submit">Titel hinzufügen</button>
-</form>
+<div class="row">
+    <div class="col-md-6 col-md-offset-3">
+        <div class="card">
+            <h2 class="text-center" style="margin-top: 0; color: #28a745;"><i class="fas fa-trophy"></i> Titel hinzufügen</h2>
+            <hr>
+            <form method="post">
+                <div class="form-group">
+                    <label for="title_name">Name des Titels</label>
+                    <input type="text" class="form-control" name="title_name" placeholder="z.B. Champions League" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="club_id">Gewinner Club</label>
+                    <select name="club_id" class="form-control" required>
+                        <option value="">Bitte wählen...</option>
+                        {% for c in clubs %}
+                            <option value="{{ c.id }}">{{ c.club_name or c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="year_">Saison / Jahr</label>
+                    <input type="number" class="form-control" name="year_" required min="1800" max="2100" placeholder="z.B. 2023">
+                </div>
+
+                <div class="text-right">
+                    <a href="{{ url_for('index') }}" class="btn btn-default">Abbrechen</a>
+                    <button type="submit" class="btn btn-primary">Titel speichern</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

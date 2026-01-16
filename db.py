@@ -19,6 +19,40 @@ if DB_CONFIG.get("host"):
 
         pool = pooling.MySQLConnectionPool(pool_name="pool", pool_size=5, **DB_CONFIG)
 
+        # Attempt to migrate schema (add uuid, country, stadium) for MySQL
+        try:
+            conn = pool.get_connection()
+            cur = conn.cursor()
+            
+            # 1. uuid
+            try:
+                cur.execute("ALTER TABLE clubs ADD COLUMN uuid VARCHAR(36)")
+                conn.commit()
+                logging.info("Migrated MySQL: Added uuid column to clubs")
+            except Exception as e:
+                logging.debug("MySQL alter table (uuid) skipped: %s", e)
+                
+            # 2. country
+            try:
+                cur.execute("ALTER TABLE clubs ADD COLUMN country VARCHAR(250)")
+                conn.commit()
+                logging.info("Migrated MySQL: Added country column to clubs")
+            except Exception as e:
+                logging.debug("MySQL alter table (country) skipped: %s", e)
+                
+            # 3. stadium
+            try:
+                cur.execute("ALTER TABLE clubs ADD COLUMN stadium VARCHAR(250)")
+                conn.commit()
+                logging.info("Migrated MySQL: Added stadium column to clubs")
+            except Exception as e:
+                logging.debug("MySQL alter table (stadium) skipped: %s", e)
+
+            cur.close()
+            conn.close()
+        except Exception as e:
+             logging.warning("MySQL migration check failed: %s", e)
+
         def get_conn():
             return pool.get_connection()
 
@@ -30,6 +64,7 @@ if DB_CONFIG.get("host"):
                 return sql.replace("INSERT IGNORE", "INSERT OR IGNORE")
             else:
                 return sql.replace("INSERT OR IGNORE", "INSERT IGNORE")
+
 
         def db_read(sql, params=None, single=False):
             sql = _normalize_sql(sql)
@@ -133,10 +168,17 @@ if USE_SQLITE:
                 competition_id INTEGER,
                 competition_name TEXT,
                 trainer TEXT,
-                title TEXT
+                title TEXT,
+                uuid TEXT
             )
             """
         )
+        # Attempt to add uuid column if it's missing (for existing dbs)
+        try:
+            cur.execute("ALTER TABLE clubs ADD COLUMN uuid TEXT")
+        except:
+            pass
+        
         cur.execute(
             """
             CREATE TABLE IF NOT EXISTS titles (

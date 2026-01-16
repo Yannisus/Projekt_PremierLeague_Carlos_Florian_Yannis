@@ -34,7 +34,8 @@ CREATE TABLE clubs (
     country VARCHAR(100),
     stadium VARCHAR(250),
     competition_id INT,
-    competition_name VARCHAR(100)
+    competition_name VARCHAR(100),
+    uuid VARCHAR(36)
 );
 
 ALTER TABLE clubs ADD COLUMN trainer VARCHAR(250);

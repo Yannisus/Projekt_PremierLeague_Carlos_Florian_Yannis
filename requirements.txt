@@ -1,7 +1,0 @@
-Flask
-python-dotenv
-GitPython
-flask-login
-werkzeug
-requests
-mysql-connector-python
